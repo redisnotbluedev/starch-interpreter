@@ -1,6 +1,6 @@
 #include "common.h"
-#include "chunk.c"
-#include "debug.c"
+#include "chunk.h"
+#include "debug.h"
 
 int main(int argc, const char* argv[]) {
 	// Create & init chunk

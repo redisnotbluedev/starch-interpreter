@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "chunk.h"
-#include "memory.c"
+#include "memory.h"
 
 void initChunk(Chunk* chunk) {
     // create an empty chunk
