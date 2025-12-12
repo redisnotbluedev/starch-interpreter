@@ -23,6 +23,15 @@ Value pop() {
 static InterpretResult run() {
 	#define READ_BYTE() (*vm.ip++)
 	#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+	#define BINARY_OP(op) do {
+		// b is first, because the first number (a) will be lower
+		// down in the stack than b, due to the execution order
+		double b = pop();
+		double a = pop();
+		push(a op b);
+	// The do-while trick is strange
+	// It prevents weird cases in macros though
+	} while (false)
 
 	for (;;) {
 		#ifdef DEBUG_TRACE_EXECUTION
@@ -49,6 +58,13 @@ static InterpretResult run() {
 				push(constant);
 				break;
 			}
+			// Binary operations
+			// Add, subtract, multiply and divide
+			// Who knew you could pass an operator to a macro?
+			case OP_ADD:      BINARY_OP(+); break;
+			case OP_SUBTRACT: BINARY_OP(-); break;
+			case OP_MULTIPLY: BINARY_OP(*); break;
+			case OP_DIVIDE:   BINARY_OP(/); break;
 			case OP_NEGATE: {
 				// Negate a value
 				// Pop from the stack and push the opposite value.
@@ -69,6 +85,7 @@ static InterpretResult run() {
 
 	#undef READ_BYTE
 	#undef READ_CONSTANT
+	#undef BINARY_OP
 }
 InterpretResult interpret(Chunk* chunk) {
 	vm.chunk = chunk;
