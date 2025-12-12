@@ -2,6 +2,7 @@
 #include "chunk.h"
 #include "debug.h"
 #include "vm.h"
+#include <stdio.h>
 
 int main(int argc, const char* argv[]) {
 	initVM();
@@ -41,7 +42,7 @@ int main(int argc, const char* argv[]) {
 	disassembleChunk(&chunk, "test chunk");
 
 	// this has been bugging me
-	printf("\n")
+	printf("\n");
 
 	// Run the chunk
 	interpret(&chunk);
