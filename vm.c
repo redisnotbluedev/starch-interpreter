@@ -32,7 +32,7 @@ static InterpretResult run() {
 				printValue(*slot);
 				printf("]");
 			}
-			printf("\n")
+			printf("\n");
 			disassembleInstruction(vm.chunk,
 								(int)(vm.ip - vm.chunk->code));
 		#endif
