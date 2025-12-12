@@ -24,13 +24,13 @@ static InterpretResult run() {
 	#define READ_BYTE() (*vm.ip++)
 	#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 	#define BINARY_OP(op) do { \
-		/* b is first, because the first number (a) will be lower */ \
-		/* down in the stack than b, due to the execution order */ \
+		/* b is first, because the first number (a) will be lower
+		   down in the stack than b, due to the execution order */ \
 		double b = pop(); \
 		double a = pop(); \
 		push(a op b); \
-		/* The do-while trick is strange */ \
-		/* It prevents weird cases in macros though */ \
+		/* The do-while trick is strange
+		   It prevents weird cases in macros though */ \
 	} while (false)
 
 	for (;;) {
