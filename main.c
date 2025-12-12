@@ -39,6 +39,10 @@ int main(int argc, const char* argv[]) {
 
 	// Debug the chunk
 	disassembleChunk(&chunk, "test chunk");
+
+	// this has been bugging me
+	printf("\n")
+
 	// Run the chunk
 	interpret(&chunk);
 
