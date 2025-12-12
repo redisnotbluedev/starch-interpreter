@@ -42,19 +42,27 @@ static InterpretResult run() {
 
 		uint8_t instruction;
 		switch (instruction = READ_BYTE()) {
-			case OP_RETURN:
-				// Return a value from a function
-				// For now, since there are no functions,
-				// this prints out the value
-				printValue(pop());
-				printf("\n");
-				return INTERPRET_OK;
 			case OP_CONSTANT: {
 				// Create a constant
 				// This is pushed onto the stack
 				Value constant = READ_CONSTANT();
 				push(constant);
 				break;
+			}
+			case OP_NEGATE: {
+				// Negate a value
+				// Pop from the stack and push the opposite value.
+				// 1.2 → -1.2
+				push(-pop());
+				break;
+			}
+			case OP_RETURN: {
+				// Return a value from a function
+				// For now, since there are no functions,
+				// this prints out the value
+				printValue(pop());
+				printf("\n");
+				return INTERPRET_OK;
 			}
 		}
 	}
