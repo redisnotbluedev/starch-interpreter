@@ -3,6 +3,7 @@
 #include "value.h"
 
 void disassembleChunk(Chunk* chunk, const char* name) {
+	// Print the contents of a chunk
 	printf("=== %s ===\n", name);
 
 	for (int offset = 0; offset < chunk->count;) {
@@ -11,6 +12,7 @@ void disassembleChunk(Chunk* chunk, const char* name) {
 }
 
 static int constantInstruction(const char* name, Chunk* chunk, int offset) {
+	// A constant instruction
 	uint8_t constant = chunk->code[offset + 1];
 	printf("%-16s %4d '", name, constant);
 	printValue(chunk->constants.values[constant]);
@@ -19,11 +21,13 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
 }
 
 static int simpleInstruction(const char* name, int offset) {
+	// A simple instruction
 	printf("%s\n", name);
 	return offset + 1;
 }
 
 int disassembleInstruction(Chunk* chunk, int offset) {
+	// Dissasemble one instruction from a chunk
 	printf("%04d ", offset);
 
 	if (offset > 0 &&
@@ -34,7 +38,9 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	}
 
 	uint8_t instruction = chunk->code[offset];
+	// Match the instruction
 	switch (instruction) {
+		// Run a debug function based on the opcode
 		case OP_CONSTANT:
 			return constantInstruction("OP_CONSTANT", chunk, offset);
 		case OP_RETURN:

@@ -26,23 +26,32 @@ static InterpretResult run() {
 
 	for (;;) {
 		#ifdef DEBUG_TRACE_EXECUTION
+			// Debug
 			printf("          ");
+			// Print the stack
 			for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
 				printf("[");
 				printValue(*slot);
 				printf("]");
 			}
 			printf("\n");
+			// Print the current chunk
 			disassembleInstruction(vm.chunk,
 								(int)(vm.ip - vm.chunk->code));
 		#endif
+
 		uint8_t instruction;
 		switch (instruction = READ_BYTE()) {
 			case OP_RETURN:
+				// Return a value from a function
+				// For now, since there are no functions,
+				// this prints out the value
 				printValue(pop());
 				printf("\n");
 				return INTERPRET_OK;
 			case OP_CONSTANT: {
+				// Create a constant
+				// This is pushed onto the stack
 				Value constant = READ_CONSTANT();
 				push(constant);
 				break;

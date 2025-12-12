@@ -5,8 +5,11 @@
 
 typedef double Value;
 typedef struct {
+	// The space in the array
 	int capacity;
+	// The number of items in the array
 	int count;
+	// The array
 	Value* values;
 } ValueArray;
 
