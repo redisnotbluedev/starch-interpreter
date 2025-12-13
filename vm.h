@@ -27,7 +27,7 @@ void initVM();
 // Delete the VM
 void freeVM();
 // Interpret a chunk
-InterpretResult interpret(Chunk* chunk);
+InterpretResult interpret(const char* source);
 // Push a value onto the stack
 void push(Value value);
 // Pop a value from the stack
