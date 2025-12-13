@@ -106,10 +106,40 @@ static void emitReturn() {
 	emitByte(OP_RETURN);
 }
 
+static uint8_t makeConstant(Value value) {
+	// Add the constant (:exploding_head:)
+	// I don't remember writing this but hey if it works it works right
+	int constant = addConstant(currentChunk(), value);
+	// Can't fit
+	if (constant > UINT8_MAX) {
+		error("Too many constants in one chunk.");
+		return 0;
+	}
+
+	return (uint8_t)constant;
+}
+
+static void emitConstant(Value value) {
+	emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+// Compile a number
+static void number() {
+	// Assume this's already been consumed and stored
+	// Convert to a double value
+	double value = strtod(parser.previous.start, NULL);
+	emitConstant(value);
+}
+
 // Really self-explanatory
 // Is anyone reading these?
 static void endCompiler() {
 	emitReturn();
+}
+
+// Compile an expression
+static void expression() {
+
 }
 
 // Bop it! Twist it! Pull it! Compile it!
