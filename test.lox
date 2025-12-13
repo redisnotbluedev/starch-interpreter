@@ -1,12 +1,1 @@
-("Hello world")
-// comment
-"someone told
-me that you can
-use multiline strings"
-1234 + 12.34
-(print)
-cheeseburger
-false
-// this is python but close enough
-// wait thats not python
-for i in range() {}
+1234
