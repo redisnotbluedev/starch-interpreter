@@ -3,3 +3,5 @@
 "someone told
 me that you can
 use multiline strings"
+1234
+12.34
