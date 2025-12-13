@@ -89,7 +89,24 @@ static InterpretResult run() {
 	#undef BINARY_OP
 }
 InterpretResult interpret(const char* source) {
-	// This will change
-	compile(source);
-	return INTERPRET_OK;
+	// Initialise the chunk
+	Chunk chunk;
+	initChunk(&chunk);
+
+	// Compile the code
+	if (!compile(source, &chunk)) {
+		freeChunk(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+
+	// Initialise the VM
+	vm.chunk = &chunk;
+	vm.ip = vm.chunk->code;
+
+	// Run it
+	InterpretResult result = run();
+
+	// Delete the chunk and return
+	freeChunk(&chunk);
+	return result;
 }
