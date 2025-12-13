@@ -101,6 +101,19 @@ static void skipWhitespace() {
 	}
 }
 
+static Token string() {
+	while (peek() != '"' && !isAtEnd()) {
+		if (peek() == '\n') scanner.line++;
+		advance();
+	}
+
+	if (isAtEnd()) return errorToken("Unterminated string.");
+
+	// Closing quote
+	advance();
+	return makeToken(TOKEN_STRING);
+}
+
 Token scanToken() {
 	// lox is C-styled, so no whitespace is needed
 	skipWhitespace();
@@ -138,6 +151,7 @@ Token scanToken() {
 		case '>':
 			return makeToken(
 				match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+		case '"': return string();
 	}
 
 	return errorToken("Unexpected character.");

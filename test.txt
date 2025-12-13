@@ -1,1 +1,5 @@
-() // comment
+("Hello world")
+// comment
+"someone told
+me that you can
+use multiline strings"
