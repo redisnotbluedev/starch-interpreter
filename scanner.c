@@ -126,7 +126,7 @@ static TokenType identifierType() {
 	// Check if it's a reserved indentifier (a keyword)
 	switch (scanner.start[0]) {
 		// Most are letters with only one possible keyword
-		case 'a': return checkKeyword(1, 2, 'nd', TOKEN_AND);
+		case 'a': return checkKeyword(1, 2, "nd", TOKEN_AND);
 		case 'c': return checkKeyword(1, 4, "lass", TOKEN_CLASS);
 		case 'e': return checkKeyword(1, 3, "lse", TOKEN_ELSE);
 		case 'f':
