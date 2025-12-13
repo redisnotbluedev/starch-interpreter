@@ -89,6 +89,7 @@ static InterpretResult run() {
 	#undef BINARY_OP
 }
 InterpretResult interpret(const char* source) {
+	// This will change
 	compile(source);
 	return INTERPRET_OK;
 }
