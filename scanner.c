@@ -25,8 +25,23 @@ static bool isAtEnd() {
 }
 
 static char advance() {
+	// Increment
 	scanner.current++;
 	return scanner.current[-1];
+}
+
+static char peek() {
+  	return *scanner.current;
+}
+
+static bool match(char expected) {
+	// No more characters
+	if (isAtEnd()) return false;
+	// Next character is wrong
+	if (*scanner.current != expected) return false;
+	// Otherwise, increment and continue
+	scanner.current++;
+	return true;
 }
 
 static Token makeToken(TokenType type) {
@@ -47,15 +62,42 @@ static Token errorToken(const char* message) {
 	return token;
 }
 
+static void skipWhitespace() {
+	// Repeat indefinitely
+	for (;;) {
+		// Check the next character
+		char c = peek();
+		switch (c) {
+		// It's whitespace
+		case ' ':
+		case '\r':
+		case '\t':
+			advance();
+			break;
+		// Special case because we track lines
+		case '\n':
+			scanner.line++;
+			advance();
+			break;
+		// It's meaningful
+		default:
+			return;
+		}
+	}
+}
+
 Token scanToken() {
+	// lox is C-styled, so no whitespace is needed
+	skipWhitespace();
+
 	// Each call to the function scans a complete token
 	scanner.start = scanner.current;
 
 	if (isAtEnd()) return makeToken(TOKEN_EOF);
 
 	char c = advance();
-	// Single-character tokens
 	switch (c) {
+		// Single-character tokens
 		case '(': return makeToken(TOKEN_LEFT_PAREN);
 		case ')': return makeToken(TOKEN_RIGHT_PAREN);
 		case '{': return makeToken(TOKEN_LEFT_BRACE);
@@ -67,6 +109,20 @@ Token scanToken() {
 		case '+': return makeToken(TOKEN_PLUS);
 		case '/': return makeToken(TOKEN_SLASH);
 		case '*': return makeToken(TOKEN_STAR);
+
+		// Two-character tokens
+		case '!':
+			return makeToken(
+				match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+		case '=':
+			return makeToken(
+				match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+		case '<':
+			return makeToken(
+				match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+		case '>':
+			return makeToken(
+				match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
 	}
 
 	return errorToken("Unexpected character.");
