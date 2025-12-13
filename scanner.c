@@ -34,6 +34,12 @@ static char peek() {
   	return *scanner.current;
 }
 
+static char peekNext() {
+	// peek, but for the character AFTER the next
+	if (isAtEnd()) return '\0';
+	return scanner.current[1];
+}
+
 static bool match(char expected) {
 	// No more characters
 	if (isAtEnd()) return false;
@@ -78,6 +84,15 @@ static void skipWhitespace() {
 		case '\n':
 			scanner.line++;
 			advance();
+			break;
+		// I don't care if comments aren't whitespace, they might as well be
+		case '/':
+			if (peekNext() == '/') {
+				// A comment goes until the end of a line
+				while (peek() != '\n' && !isAtEnd()) advance();
+			} else {
+				return;
+			}
 			break;
 		// It's meaningful
 		default:
