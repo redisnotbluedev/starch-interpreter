@@ -153,6 +153,22 @@ static void emitConstant(Value value) {
 	emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
+// Really self-explanatory
+// Is anyone reading these?
+static void endCompiler() {
+	emitReturn();
+	#ifdef DEBUG_PRINT_CODE
+		if (!parser.hadError) {
+			disassembleChunk(currentChunk(), "code");
+		}
+	#endif
+}
+
+// Forward declarations to handle recursive grammar
+static void expression();
+static ParseRule* getRule(TokenType type);
+static void parsePrecedence(Precedence precedence);
+
 // Compile a number
 static void number() {
 	// Assume this's already been consumed and stored
@@ -242,22 +258,6 @@ static ParseRule* getRule(TokenType type) {
 	// Return the rule at the given index
 	return &rules[type];
 }
-
-// Really self-explanatory
-// Is anyone reading these?
-static void endCompiler() {
-	emitReturn();
-	#ifdef DEBUG_PRINT_CODE
-		if (!parser.hadError) {
-			disassembleChunk(currentChunk(), "code");
-		}
-	#endif
-}
-
-// Forward declarations to handle recursive grammar
-static void expression();
-static ParseRule* getRule(TokenType type);
-static void parsePrecedence(Precedence precedence);
 
 static void binary() {
 	TokenType operatorType = parser.previous.type;
