@@ -164,6 +164,17 @@ static void endCompiler() {
 	#endif
 }
 
+static void grouping() {
+	expression();
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+}
+
+// Compile an expression
+static void expression() {
+	// Parse the lowest level
+	parsePrecedence(PREC_ASSIGNMENT);
+}
+
 // Forward declarations to handle recursive grammar
 static void expression();
 static ParseRule* getRule(TokenType type);
@@ -271,17 +282,6 @@ static void binary() {
 		case TOKEN_SLASH:  emitByte(OP_DIVIDE); break;
 		default: return; // Unreachable.
 	}
-}
-
-static void grouping() {
-	expression();
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-}
-
-// Compile an expression
-static void expression() {
-	// Parse the lowest level
-	parsePrecedence(PREC_ASSIGNMENT);
 }
 
 // Bop it! Twist it! Pull it! Compile it!
