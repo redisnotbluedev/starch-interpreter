@@ -213,7 +213,25 @@ ParseRule rules[] = {
 };
 
 static void parsePrecedence(Precedence precedence) {
+	advance();
+	// Get the prefix rule
+	ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+	// If there's no prefix rule, it's a syntax error
+	if (prefixRule == NULL) {
+		error("Expect expression.");
+		return;
+	}
 
+	prefixRule();
+
+	// Stop if the token is too low precendence, or isn't an infix operator
+	while (precedence <= getRule(parser.current.type)->precedence) {
+		advance();
+		// Get the infix rule
+		ParseFn infixRule = getRule(parser.previous.type)->infix;
+		// Run it
+		infixRule();
+	}
 }
 
 static ParseRule* getRule(TokenType type) {
