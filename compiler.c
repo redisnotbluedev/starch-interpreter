@@ -164,21 +164,29 @@ static void endCompiler() {
 	#endif
 }
 
-static void grouping() {
-	expression();
-	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-}
-
-// Compile an expression
-static void expression() {
-	// Parse the lowest level
-	parsePrecedence(PREC_ASSIGNMENT);
-}
-
 // Forward declarations to handle recursive grammar
 static void expression();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
+
+static void binary() {
+	TokenType operatorType = parser.previous.type;
+	ParseRule* rule = getRule(operatorType);
+	parsePrecedence((Precedence)(rule->precedence + 1));
+
+	switch (operatorType) {
+		case TOKEN_PLUS:   emitByte(OP_ADD); break;
+		case TOKEN_MINUS:  emitByte(OP_SUBTRACT); break;
+		case TOKEN_STAR:   emitByte(OP_MULTIPLY); break;
+		case TOKEN_SLASH:  emitByte(OP_DIVIDE); break;
+		default: return; // Unreachable.
+	}
+}
+
+static void grouping() {
+	expression();
+	consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+}
 
 // Compile a number
 static void number() {
@@ -270,18 +278,10 @@ static ParseRule* getRule(TokenType type) {
 	return &rules[type];
 }
 
-static void binary() {
-	TokenType operatorType = parser.previous.type;
-	ParseRule* rule = getRule(operatorType);
-	parsePrecedence((Precedence)(rule->precedence + 1));
-
-	switch (operatorType) {
-		case TOKEN_PLUS:   emitByte(OP_ADD); break;
-		case TOKEN_MINUS:  emitByte(OP_SUBTRACT); break;
-		case TOKEN_STAR:   emitByte(OP_MULTIPLY); break;
-		case TOKEN_SLASH:  emitByte(OP_DIVIDE); break;
-		default: return; // Unreachable.
-	}
+// Compile an expression
+static void expression() {
+	// Parse the lowest level
+	parsePrecedence(PREC_ASSIGNMENT);
 }
 
 // Bop it! Twist it! Pull it! Compile it!
