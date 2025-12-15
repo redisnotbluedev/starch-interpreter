@@ -4,6 +4,10 @@
 #include "compiler.h"
 #include "scanner.h"
 
+#ifdef DEBUG_PRINT_CODE
+#include "debug.h"
+#endif
+
 typedef struct {
 	// Current token
 	Token current;
@@ -243,6 +247,11 @@ static ParseRule* getRule(TokenType type) {
 // Is anyone reading these?
 static void endCompiler() {
 	emitReturn();
+	#ifdef DEBUG_PRINT_CODE
+		if (!parser.hadError) {
+			disassembleChunk(currentChunk(), "code");
+		}
+	#endif
 }
 
 // Forward declarations to handle recursive grammar
