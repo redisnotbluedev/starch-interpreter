@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from errors import StarchSyntaxError
 
 class TokenType:
 	# Literals
@@ -105,6 +106,8 @@ class Lexer:
 			if self.pos >= len(self.code):
 				break
 
+			self.read_token()
+
 		self.tokens.append(Token(TokenType.EOF))
 		return self.tokens
 
@@ -125,6 +128,17 @@ class Lexer:
 						self.advance()
 						break
 					self.advance()
-		elif self.peek() == "#":
-			while self.peek() and self.peek() != "\n":
+				else:
+					raise StarchSyntaxError("Unterminated block comment", self.line)
+
+	def read_token(self):
+		char = self.peek()
+
+		match char:
+			case "~":
 				self.advance()
+				if self.peek() == ">":
+					self.advance()
+					self.tokens.append(Token(TokenType.PIPELINE, line=self.line))
+				else:
+					self.tokens.append(Token(TokenType.CONCAT, line=self.line))
