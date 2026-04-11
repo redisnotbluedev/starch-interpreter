@@ -1,0 +1,131 @@
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from lexer import Token, TokenType
+from errors import StarchError, StarchTypeError, StarchSyntaxError
+
+@dataclass
+class Program:
+	statements: list
+
+@dataclass
+class Node(ABC):
+	line: int
+	col: int
+	source_line: str
+
+	@abstractmethod
+	def __repr__(self) -> str: ...
+
+@dataclass
+class VarDeclaration(Node):
+	name: str
+	type: str | None
+	value: Node
+	mutable: bool
+
+@dataclass
+class Literal(Node):
+	value: int | float | str | bool
+
+@dataclass
+class Identifier(Node):
+	name: str
+
+def node(token: Token, type: type[Node], *args, **kwargs):
+	return type(token.line, token.col, token.source_line, *args, **kwargs)
+
+class Parser:
+	def __init__(self, tokens: list[Token], file: str):
+		self.tokens = tokens
+		self.file = file
+		self.pos = 0
+
+	def error(self, type: type[StarchError], message: str):
+		token = self.current
+		return type(message, token.line, token.source_line, token.col, self.file)
+
+	@property
+	def current(self) -> Token:
+		return self.tokens[self.pos]
+
+	def peek(self, offset: int = 1) -> Token:
+		pos = self.pos + offset
+		if pos >= len(self.tokens):
+			return self.tokens[-1]  # EOF
+		return self.tokens[pos]
+
+	def advance(self) -> Token:
+		token = self.current
+		self.pos += 1
+		return token
+
+	def expect(self, type: str) -> Token:
+		if self.current.type != type:
+			raise self.error(StarchTypeError, f"Expected {type}, got {self.current.type}")
+		return self.advance()
+
+	def match(self, *types: TokenType) -> bool:
+		if self.current.type in types:
+			self.advance()
+			return True
+		return False
+
+	def parse(self) -> Program:
+		statements = []
+
+		while self.current.type != TokenType.EOF:
+			statements.append(self.parse_statement())
+
+		return Program(statements)
+
+	def parse_statement(self) -> Node:
+		match self.current.type:
+			case TokenType.VAR | TokenType.CONST:
+				return self.parse_var_decl()
+			case _:
+				return self.parse_expression_statement()
+
+	def parse_var_decl(self):
+		token = self.advance()
+
+		name = self.expect(TokenType.IDENT).value
+		type = None
+
+		if self.current.type == TokenType.COLON:
+			self.advance()
+			type = self.expect(TokenType.IDENT).value
+
+		self.expect(TokenType.ASSIGN)
+		value = self.parse_expression()
+
+		self.expect(TokenType.SEMICOLON)
+
+		return node(token, VarDeclaration, name, type, value, token.type == TokenType.VAR)
+
+	def parse_expression_statement(self) -> Node:
+		token = self.current
+		expression = self.parse_expression()
+		self.expect(TokenType.SEMICOLON)
+		return node(token, expression, Node)
+
+	def parse_expression(self):
+		return self.parse_primary()
+
+	def parse_primary(self):
+		token = self.current
+		match token.type:
+			case TokenType.NUMBER:
+				return node(self.advance(), Literal, token.value)
+			case TokenType.STRING:
+				return node(self.advance(), Literal, token.value)
+			case TokenType.BOOL:
+				return node(self.advance(), Literal, token.value)
+			case TokenType.IDENT:
+				return node(self.advance(), Literal, token.value)
+			case TokenType.LPAREN:
+				self.advance()
+				expression = self.parse_expression()
+				self.expect(TokenType.RPAREN)
+				return expression
+			case _:
+				raise self.error(StarchSyntaxError, f"unexpected token {token.type}")

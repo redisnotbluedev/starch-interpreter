@@ -66,14 +66,6 @@ class TokenType:
 	MINUS_ASSIGN = "MINUS_ASSIGN"
 	STAR_ASSIGN = "STAR_ASSIGN"
 	SLASH_ASSIGN = "SLASH_ASSIGN"
-	# Types
-	TYPE_INT = "TYPE_INT"
-	TYPE_FLOAT = "TYPE_FLOAT"
-	TYPE_STR = "TYPE_STR"
-	TYPE_BOOL = "TYPE_BOOL"
-	TYPE_LIST = "TYPE_LIST"
-	TYPE_DICT = "TYPE_DICT"
-	TYPE_VOID = "TYPE_VOID"
 	# Special
 	EOF = "EOF"
 
@@ -303,10 +295,14 @@ class Lexer:
 				case "x":
 					while self.peek() and self.peek() in "0123456789abcdefABCDEF":
 						result += self.advance()
+					if not result:
+						raise self.error(StarchSyntaxError, "invalid hexadecimal literal")
 					return self.token(TokenType.NUMBER, int(result, 16))
 				case "o":
 					while self.peek() and self.peek() in "01234567":
 						result += self.advance()
+					if not result:
+						raise self.error(StarchSyntaxError, "invalid octal literal")
 					return self.token(TokenType.NUMBER, int(result, 8))
 				case "b":
 					while self.peek() and self.peek() in "01":
