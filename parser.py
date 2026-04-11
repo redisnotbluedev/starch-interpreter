@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
 from lexer import Token, TokenType
 from errors import StarchError, StarchTypeError, StarchSyntaxError
 
@@ -8,26 +7,31 @@ class Program:
 	statements: list
 
 @dataclass
-class Node(ABC):
+class Node():
 	line: int
 	col: int
 	source_line: str
 
-	@abstractmethod
-	def __repr__(self) -> str: ...
+	def __repr__(self) -> str:
+		fields = {
+			k: v for k, v in self.__dict__.items()
+			if k not in ("line", "col", "source_line")
+		}
+		inner = ", ".join(f"{k}={v!r}" for k, v in fields.items())
+		return f"{self.__class__.__name__}({inner})"
 
-@dataclass
+@dataclass(repr=False)
 class VarDeclaration(Node):
 	name: str
 	type: str | None
 	value: Node
 	mutable: bool
 
-@dataclass
+@dataclass(repr=False)
 class Literal(Node):
 	value: int | float | str | bool
 
-@dataclass
+@dataclass(repr=False)
 class Identifier(Node):
 	name: str
 
