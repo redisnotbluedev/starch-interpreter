@@ -301,7 +301,7 @@ class Lexer:
 					return Token(TokenType.NUMBER, int(result, 2), self.line)
 		elif self.peek(1).lower() == "e":
 			result = self.advance()
-			self.advance()
+			result += self.advance()
 
 			if self.peek() in "+-":
 				result += self.advance()
