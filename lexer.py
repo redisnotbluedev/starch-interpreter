@@ -1,8 +1,5 @@
-from socket import SO_PASSSEC
 from dataclasses import dataclass
-
 from errors import StarchError, StarchSyntaxError
-
 
 class TokenType:
 	# Literals
