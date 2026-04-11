@@ -215,25 +215,30 @@ class Lexer:
 						case "!":
 							if self.peek() == "=":
 								type = TokenType.NEQ
+								self.advance()
 							else:
 								raise self.error(StarchSyntaxError, "invalid syntax")
 						case "=":
 							if self.peek() == "=":
 								type = TokenType.EQ
+								self.advance()
 							else:
 								type = TokenType.ASSIGN
 						case "<":
 							if self.peek() == "=":
 								type = TokenType.GTE
+								self.advance()
 							else:
 								type = TokenType.GT
 						case ">":
 							if self.peek() == "=":
 								type = TokenType.LTE
+								self.advance()
 							else:
 								type = TokenType.LT
+				else:
+					self.advance()
 
-				self.advance()
 				self.tokens.append(Token(type, None, self.line))
 
 			case _ if char.isdigit():
