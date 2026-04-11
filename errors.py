@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 class StarchError(ABC, Exception):
-	def __init__(self, message: str, line: int = 0, context: str | None = None, file: str = "<starch-input>"):
+	def __init__(self, message: str, line: int = 0, context: str | None = None, col: int | None = None, file: str = "<starch-input>"):
 		abstracts = getattr(self, "__abstractmethods__", set())
 
 		if abstracts:
@@ -14,9 +14,13 @@ class StarchError(ABC, Exception):
 		self.line = line
 
 		if context:
-			text = f"File '{file}', line {line}\n\t{context}\n{self.get_type()}: {message}"
+			text = f"File '{file}', line {line}\n\t{context}"
+			if col:
+				text += "\n\t" + " " * (col - 1) + "^"
 		else:
-			text = f"File '{file}', line {line}\n{self.get_type()}: {message}"
+			text = f"File '{file}', line {line}"
+
+		text += f"\n{self.get_type()}: {message}"
 		super().__init__(text)
 
 	@abstractmethod

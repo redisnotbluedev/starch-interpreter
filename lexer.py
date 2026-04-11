@@ -1,3 +1,4 @@
+from socket import SO_PASSSEC
 from dataclasses import dataclass
 
 from errors import StarchError, StarchSyntaxError
@@ -86,12 +87,13 @@ class Token:
 	line: int = 0
 
 class Lexer:
-	def __init__(self, code: str):
+	def __init__(self, code: str, file: str = "<starch-input>"):
 		self.code = code
 		self.pos = 0
 		self.line = 1
+		self.col = 1
 		self.tokens = []
-		self.file = "<starch-input>" # placeholder
+		self.file = file
 
 	def peek(self, offset=0) -> str | None:
 		i = self.pos + offset
@@ -102,6 +104,9 @@ class Lexer:
 		self.pos += 1
 		if char == "\n":
 			self.line += 1
+			self.col = 1
+		else:
+			self.col += 1
 		return char
 
 	def get_line(self) -> str:
@@ -111,7 +116,7 @@ class Lexer:
 		return ""
 
 	def error(self, type: type[StarchError], message: str):
-		return type(message, self.line, self.get_line(), self.file)
+		return type(message, self.line, self.get_line(), self.col, self.file)
 
 	def lex(self) -> list[Token]:
 		while self.pos < len(self.code):
@@ -121,28 +126,32 @@ class Lexer:
 
 			self.read_token()
 
-		self.tokens.append(Token(TokenType.EOF))
+		self.tokens.append(Token(TokenType.EOF, line=self.line))
 		return self.tokens
 
 	def skip_whitespace(self):
-		if (self.peek() or "") in " \n\t\r":
-			self.advance()
-		elif self.peek() == "/":
-			if self.peek(1) == "/":
-				while self.peek() and self.peek() != "\n":
-					self.advance()
-			elif self.peek(1) == "*":
+		while self.peek():
+			if (self.peek() or "") in " \n\t\r":
 				self.advance()
-				self.advance()
-
-				while self.peek():
-					if self.peek() == "*" and self.peek(1) == "/":
+			elif self.peek() == "/":
+				if self.peek(1) == "/":
+					while self.peek() and self.peek() != "\n":
 						self.advance()
-						self.advance()
-						break
+				elif self.peek(1) == "*":
 					self.advance()
+					self.advance()
+					while self.peek():
+						if self.peek() == "*" and self.peek(1) == "/":
+							self.advance()
+							self.advance()
+							break
+						self.advance()
+					else:
+						raise self.error(StarchSyntaxError, "unterminated block comment")
 				else:
-					raise self.error(StarchSyntaxError, "unterminated block comment")
+					break
+			else:
+				break
 
 	def read_token(self):
 		char = self.peek()
@@ -186,6 +195,47 @@ class Lexer:
 					self.tokens.append(Token(TokenType.SLASH, line=self.line))
 			case '"':
 				self.tokens.append(self.read_string())
+			case _ if char in "(){}[];:,.=<>!≈":
+				type = {
+					"(": TokenType.LPAREN,
+					")": TokenType.RPAREN,
+					"{": TokenType.LBRACE,
+					"}": TokenType.RBRACE,
+					"[": TokenType.LBRACKET,
+					"]": TokenType.RBRACKET,
+					";": TokenType.SEMICOLON,
+					":": TokenType.COLON,
+					",": TokenType.COMMA,
+					".": TokenType.DOT,
+					"≈": TokenType.APPROX
+				}.get(char)
+
+				if type is None:
+					match self.advance():
+						case "!":
+							if self.peek() == "=":
+								type = TokenType.NEQ
+							else:
+								raise self.error(StarchSyntaxError, "invalid syntax")
+						case "=":
+							if self.peek() == "=":
+								type = TokenType.EQ
+							else:
+								type = TokenType.ASSIGN
+						case "<":
+							if self.peek() == "=":
+								type = TokenType.GTE
+							else:
+								type = TokenType.GT
+						case ">":
+							if self.peek() == "=":
+								type = TokenType.LTE
+							else:
+								type = TokenType.LT
+
+				self.advance()
+				self.tokens.append(Token(type, None, self.line))
+
 			case _ if char.isdigit():
 				self.tokens.append(self.read_number())
 			case _ if char.isalpha() or char == "_":
@@ -194,6 +244,10 @@ class Lexer:
 				raise self.error(StarchSyntaxError, f"unexpected character '{char}'")
 
 	def read_string(self) -> Token:
+		start_line = self.line
+		start_col = self.col
+		start_ctx = self.get_line()
+
 		self.advance()
 		result = ""
 
@@ -221,53 +275,56 @@ class Lexer:
 			else:
 				result += self.advance()
 		else:
-			raise self.error(StarchSyntaxError, "unterminated string literal")
+			raise StarchSyntaxError("unterminated string literal", start_line, start_ctx, start_col, self.file)
 
 		return Token(TokenType.STRING, result, self.line)
 
 	def read_number(self) -> Token:
 		result = ""
 
-		if self.peek() == "0" and self.peek(1) in "xob": # type: ignore[ty:unsupported-operator]
+		if self.peek() == "0" and self.peek(1).lower() in "xob":
 			self.advance()
 			prefix = self.advance()
 
 			match prefix:
 				case "x":
-					while self.peek():
-						if not self.peek() in "0123456789abcdefABCDEF": # type: ignore[ty:unsupported-operator]
-							raise self.error(StarchSyntaxError, "invalid hexadecimal literal")
+					while self.peek() and self.peek() in "0123456789abcdefABCDEF":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 16))
+					return Token(TokenType.NUMBER, int(result, 16), self.line)
 				case "o":
-					while self.peek():
-						if not self.peek() in "01234567": # type: ignore[ty:unsupported-operator]
-							raise self.error(StarchSyntaxError, "invalid octal literal")
+					while self.peek() and self.peek() in "01234567":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 8))
+					return Token(TokenType.NUMBER, int(result, 8), self.line)
 				case "b":
-					while self.peek():
-						if not self.peek() in "01": # type: ignore[ty:unsupported-operator]
-							raise self.error(StarchSyntaxError, "invalid binary literal")
+					while self.peek() and self.peek() in "01":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 2))
+					return Token(TokenType.NUMBER, int(result, 2), self.line)
+		elif self.peek(1).lower() == "e":
+			result = self.advance()
+			self.advance()
 
-		while self.peek() and self.peek().isdigit(): # type: ignore[ty:unresolved-attribute]
+			if self.peek() in "+-":
+				result += self.advance()
+			while self.peek() and self.peek().isdigit():
+				result += self.advance()
+			return Token(TokenType.FLOAT, float(result), self.line)
+
+		while self.peek() and self.peek().isdigit():
 			result += self.advance()
 
 		if self.peek() == "." and self.peek(1):
 			result += self.advance()
 
-			while self.peek() and self.peek().isdigit(): # type: ignore[ty:unresolved-attribute]
+			while self.peek() and self.peek().isdigit():
 				result += self.advance()
 
-			return Token(TokenType.FLOAT, float(result))
+			return Token(TokenType.FLOAT, float(result), self.line)
 
-		return Token(TokenType.NUMBER, int(result))
+		return Token(TokenType.NUMBER, int(result), self.line)
 
 	def read_ident_or_keyword(self) -> Token:
 		result = ""
-		while self.peek() and (self.peek().isalnum() or self.peek() == "_"): # type: ignore[ty:unresolved-attribute]
+		while self.peek() and (self.peek().isalnum() or self.peek() == "_"):
 			result += self.advance()
 
 		keywords = {
@@ -299,4 +356,4 @@ class Lexer:
 		if result in ("true", "false"):
 			value = result == "true"
 
-		return Token(type, value)
+		return Token(type, value, self.line)

@@ -12,6 +12,7 @@ def excepthook(type, value, traceback):
 sys.excepthook = excepthook
 
 if __name__ == "__main__":
-	lexer = Lexer("var x: int = 1")
-	tokens = lexer.lex()
-	print(tokens)
+	with open("main.starch") as f:
+		lexer = Lexer(f.read(), "main.starch")
+		tokens = lexer.lex()
+		print(tokens)
