@@ -79,8 +79,18 @@ class Parser:
 
 	def expect(self, type: TokenType) -> Token:
 		if self.current.type != type:
-			raise self.error(StarchTypeError, f"Expected {type}, got {self.current.type}")
+			raise self.error(StarchSyntaxError, f"Expected {type}, got {self.current.type}")
 		return self.advance()
+
+	def terminate(self):
+		last = self.peek(-1)
+		if self.current.type != TokenType.SEMICOLON:
+			if self.current.line != last.line:
+				raise StarchSyntaxError(f"Expected {TokenType.SEMICOLON}", last.line, last.source_line, len(last.source_line) + 1, self.file)
+			else:
+				raise self.error(StarchSyntaxError, f"Expected {TokenType.SEMICOLON}, got {self.current.type}")
+
+		self.advance()
 
 	def match(self, *types: TokenType) -> bool:
 		if self.current.type in types:
@@ -116,14 +126,14 @@ class Parser:
 		self.expect(TokenType.ASSIGN)
 		value = self.parse_expression()
 
-		self.expect(TokenType.SEMICOLON)
+		self.terminate()
 
 		return node(token, VarDeclaration, name, type, value, token.type == TokenType.VAR)
 
 	def parse_expression_statement(self) -> Node:
 		token = self.current
 		expression = self.parse_expression()
-		self.expect(TokenType.SEMICOLON)
+		self.terminate()
 		return node(token, ExpressionStatement, expression)
 
 	def parse_expression(self):
