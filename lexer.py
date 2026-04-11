@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from errors import StarchError, StarchSyntaxError
+
 
 class TokenType:
 	# Literals
@@ -191,7 +193,7 @@ class Lexer:
 			case _:
 				raise self.error(StarchSyntaxError, f"unexpected character '{char}'")
 
-	def read_string(self):
+	def read_string(self) -> Token:
 		self.advance()
 		result = ""
 
@@ -223,7 +225,7 @@ class Lexer:
 
 		return Token(TokenType.STRING, result, self.line)
 
-	def read_number(self):
+	def read_number(self) -> Token:
 		result = ""
 
 		if self.peek() == "0" and self.peek(1) in "xob": # type: ignore[ty:unsupported-operator]
@@ -262,3 +264,39 @@ class Lexer:
 			return Token(TokenType.FLOAT, float(result))
 
 		return Token(TokenType.NUMBER, int(result))
+
+	def read_ident_or_keyword(self) -> Token:
+		result = ""
+		while self.peek() and (self.peek().isalnum() or self.peek() == "_"): # type: ignore[ty:unresolved-attribute]
+			result += self.advance()
+
+		keywords = {
+			"var": TokenType.VAR,
+			"const": TokenType.CONST,
+			"function": TokenType.FUNCTION,
+			"return": TokenType.RETURN,
+			"if": TokenType.IF,
+			"elif": TokenType.ELIF,
+			"else": TokenType.ELSE,
+			"for": TokenType.FOR,
+			"while": TokenType.WHILE,
+			"in": TokenType.IN,
+			"using": TokenType.USING,
+			"watch": TokenType.WATCH,
+			"derive": TokenType.DERIVE,
+			"true": TokenType.BOOL,
+			"false": TokenType.BOOL,
+			"and": TokenType.AND,
+			"or": TokenType.OR,
+			"not": TokenType.NOT,
+			"class": TokenType.CLASS,
+			"this": TokenType.THIS,
+			"super": TokenType.SUPER,
+		}
+
+		type = keywords.get(result, TokenType.IDENT)
+		value = result if type == TokenType.IDENT else None
+		if result in ("true", "false"):
+			value = result == "true"
+
+		return Token(type, value)
