@@ -35,6 +35,20 @@ class Literal(Node):
 class Identifier(Node):
 	name: str
 
+@dataclass(repr=False)
+class FunctionCall(Node):
+	callee: Node
+	args: list[Node]
+
+@dataclass(repr=False)
+class MemberAccess(Node):
+	callee: Node
+	member: Identifier
+
+@dataclass(repr=False)
+class ExpressionStatement(Node):
+	expression: Node
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -110,10 +124,33 @@ class Parser:
 		token = self.current
 		expression = self.parse_expression()
 		self.expect(TokenType.SEMICOLON)
-		return node(token, expression, Node)
+		return node(token, ExpressionStatement, expression)
 
 	def parse_expression(self):
-		return self.parse_primary()
+		return self.parse_call()
+
+	def parse_call(self):
+		expression = self.parse_primary()
+
+		while True:
+			token = self.current
+
+			match token.type:
+				case TokenType.LPAREN:
+					self.advance()
+					args = []
+					while self.current.type != TokenType.RPAREN:
+						args.append(self.parse_expression())
+						if self.current.type == TokenType.COMMA:
+							self.advance()
+
+					self.expect(TokenType.RPAREN)
+					expression = node(token, FunctionCall, expression, args)
+				case TokenType.DOT:
+					self.advance()
+					expression = node(token, MemberAccess, expression, self.expect(TokenType.IDENT).value)
+				case _:
+					return expression
 
 	def parse_primary(self):
 		token = self.current
@@ -125,7 +162,7 @@ class Parser:
 			case TokenType.BOOL:
 				return node(self.advance(), Literal, token.value)
 			case TokenType.IDENT:
-				return node(self.advance(), Literal, token.value)
+				return node(self.advance(), Identifier, token.value)
 			case TokenType.LPAREN:
 				self.advance()
 				expression = self.parse_expression()

@@ -1,1 +1,5 @@
 var x: int = 1;
+x.value;
+foo.bar();
+foo.bar.baz();
+x.y.z;
