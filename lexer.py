@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from errors import StarchSyntaxError
+from errors import StarchError, StarchSyntaxError
 
 class TokenType:
 	# Literals
 	NUMBER = "NUMBER"
+	FLOAT = "FLOAT"
 	STRING = "STRING"
 	BOOL = "BOOL"
 	# Keywords
@@ -88,6 +89,7 @@ class Lexer:
 		self.pos = 0
 		self.line = 1
 		self.tokens = []
+		self.file = "<starch-input>" # placeholder
 
 	def peek(self, offset=0) -> str | None:
 		i = self.pos + offset
@@ -99,6 +101,15 @@ class Lexer:
 		if char == "\n":
 			self.line += 1
 		return char
+
+	def get_line(self) -> str:
+		lines = self.code.splitlines()
+		if self.line <= len(lines):
+			return lines[self.line - 1]  # line is 1-indexed
+		return ""
+
+	def error(self, type: type[StarchError], message: str):
+		return type(message, self.line, self.get_line(), self.file)
 
 	def lex(self) -> list[Token]:
 		while self.pos < len(self.code):
@@ -129,10 +140,11 @@ class Lexer:
 						break
 					self.advance()
 				else:
-					raise StarchSyntaxError("Unterminated block comment", self.line)
+					raise self.error(StarchSyntaxError, "unterminated block comment")
 
 	def read_token(self):
 		char = self.peek()
+		assert char is not None
 
 		match char:
 			case "~":
@@ -142,3 +154,111 @@ class Lexer:
 					self.tokens.append(Token(TokenType.PIPELINE, line=self.line))
 				else:
 					self.tokens.append(Token(TokenType.CONCAT, line=self.line))
+			case "+":
+				self.advance()
+				if self.peek() == "=":
+					self.advance()
+					self.tokens.append(Token(TokenType.PLUS_ASSIGN, line=self.line))
+				else:
+					self.tokens.append(Token(TokenType.PLUS, line=self.line))
+			case "-":
+				self.advance()
+				if self.peek() == "=":
+					self.advance()
+					self.tokens.append(Token(TokenType.MINUS_ASSIGN, line=self.line))
+				else:
+					self.tokens.append(Token(TokenType.MINUS, line=self.line))
+			case "*":
+				self.advance()
+				if self.peek() == "=":
+					self.advance()
+					self.tokens.append(Token(TokenType.STAR_ASSIGN, line=self.line))
+				else:
+					self.tokens.append(Token(TokenType.STAR, line=self.line))
+			case "/":
+				self.advance()
+				if self.peek() == "=":
+					self.advance()
+					self.tokens.append(Token(TokenType.SLASH_ASSIGN, line=self.line))
+				else:
+					self.tokens.append(Token(TokenType.SLASH, line=self.line))
+			case '"':
+				self.tokens.append(self.read_string())
+			case _ if char.isdigit():
+				self.tokens.append(self.read_number())
+			case _ if char.isalpha() or char == "_":
+				self.tokens.append(self.read_ident_or_keyword())
+			case _:
+				raise self.error(StarchSyntaxError, f"unexpected character '{char}'")
+
+	def read_string(self):
+		self.advance()
+		result = ""
+
+		while self.peek():
+			if self.peek() == "\\":
+				self.advance()
+				match self.peek():
+					case "n":
+						self.advance()
+						result += "\n"
+					case "t":
+						self.advance()
+						result += "\t"
+					case "\\":
+						self.advance()
+						result += "\\"
+					case '"':
+						self.advance()
+						result += '"'
+					case _:
+						raise self.error(StarchSyntaxError, f"invalid escape sequence '\\{self.peek()}'")
+			elif self.peek() == '"':
+				self.advance()
+				break
+			else:
+				result += self.advance()
+		else:
+			raise self.error(StarchSyntaxError, "unterminated string literal")
+
+		return Token(TokenType.STRING, result, self.line)
+
+	def read_number(self):
+		result = ""
+
+		if self.peek() == "0" and self.peek(1) in "xob": # type: ignore[ty:unsupported-operator]
+			self.advance()
+			prefix = self.advance()
+
+			match prefix:
+				case "x":
+					while self.peek():
+						if not self.peek() in "0123456789abcdefABCDEF": # type: ignore[ty:unsupported-operator]
+							raise self.error(StarchSyntaxError, "invalid hexadecimal literal")
+						result += self.advance()
+					return Token(TokenType.NUMBER, int(result, 16))
+				case "o":
+					while self.peek():
+						if not self.peek() in "01234567": # type: ignore[ty:unsupported-operator]
+							raise self.error(StarchSyntaxError, "invalid octal literal")
+						result += self.advance()
+					return Token(TokenType.NUMBER, int(result, 8))
+				case "b":
+					while self.peek():
+						if not self.peek() in "01": # type: ignore[ty:unsupported-operator]
+							raise self.error(StarchSyntaxError, "invalid binary literal")
+						result += self.advance()
+					return Token(TokenType.NUMBER, int(result, 2))
+
+		while self.peek() and self.peek().isdigit(): # type: ignore[ty:unresolved-attribute]
+			result += self.advance()
+
+		if self.peek() == "." and self.peek(1):
+			result += self.advance()
+
+			while self.peek() and self.peek().isdigit(): # type: ignore[ty:unresolved-attribute]
+				result += self.advance()
+
+			return Token(TokenType.FLOAT, float(result))
+
+		return Token(TokenType.NUMBER, int(result))
