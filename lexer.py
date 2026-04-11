@@ -82,6 +82,8 @@ class Token:
 	type: str
 	value: str | int | float | bool | None = None
 	line: int = 0
+	col: int = 0
+	source_line: str = ""
 
 class Lexer:
 	def __init__(self, code: str, file: str = "<starch-input>"):
@@ -89,6 +91,7 @@ class Lexer:
 		self.pos = 0
 		self.line = 1
 		self.col = 1
+		self.start_col = 1
 		self.tokens = []
 		self.file = file
 
@@ -115,12 +118,17 @@ class Lexer:
 	def error(self, type: type[StarchError], message: str):
 		return type(message, self.line, self.get_line(), self.col, self.file)
 
+	def token(self, type: str, value: str | int | float | bool | None = None):
+		return Token(type, value, self.line, self.start_col, self.get_line())
+
 	def lex(self) -> list[Token]:
 		while self.pos < len(self.code):
 			self.skip_whitespace()
+
 			if self.pos >= len(self.code):
 				break
 
+			self.start_col = self.col
 			self.read_token()
 
 		self.tokens.append(Token(TokenType.EOF, line=self.line))
@@ -159,37 +167,37 @@ class Lexer:
 				self.advance()
 				if self.peek() == ">":
 					self.advance()
-					self.tokens.append(Token(TokenType.PIPELINE, line=self.line))
+					self.tokens.append(self.token(TokenType.PIPELINE))
 				else:
-					self.tokens.append(Token(TokenType.CONCAT, line=self.line))
+					self.tokens.append(self.token(TokenType.CONCAT))
 			case "+":
 				self.advance()
 				if self.peek() == "=":
 					self.advance()
-					self.tokens.append(Token(TokenType.PLUS_ASSIGN, line=self.line))
+					self.tokens.append(self.token(TokenType.PLUS_ASSIGN))
 				else:
-					self.tokens.append(Token(TokenType.PLUS, line=self.line))
+					self.tokens.append(self.token(TokenType.PLUS))
 			case "-":
 				self.advance()
 				if self.peek() == "=":
 					self.advance()
-					self.tokens.append(Token(TokenType.MINUS_ASSIGN, line=self.line))
+					self.tokens.append(self.token(TokenType.MINUS_ASSIGN))
 				else:
-					self.tokens.append(Token(TokenType.MINUS, line=self.line))
+					self.tokens.append(self.token(TokenType.MINUS))
 			case "*":
 				self.advance()
 				if self.peek() == "=":
 					self.advance()
-					self.tokens.append(Token(TokenType.STAR_ASSIGN, line=self.line))
+					self.tokens.append(self.token(TokenType.STAR_ASSIGN))
 				else:
-					self.tokens.append(Token(TokenType.STAR, line=self.line))
+					self.tokens.append(self.token(TokenType.STAR))
 			case "/":
 				self.advance()
 				if self.peek() == "=":
 					self.advance()
-					self.tokens.append(Token(TokenType.SLASH_ASSIGN, line=self.line))
+					self.tokens.append(self.token(TokenType.SLASH_ASSIGN))
 				else:
-					self.tokens.append(Token(TokenType.SLASH, line=self.line))
+					self.tokens.append(self.token(TokenType.SLASH))
 			case '"':
 				self.tokens.append(self.read_string())
 			case _ if char in "(){}[];:,.=<>!≈":
@@ -236,7 +244,7 @@ class Lexer:
 				else:
 					self.advance()
 
-				self.tokens.append(Token(type, None, self.line))
+				self.tokens.append(self.token(type, None))
 
 			case _ if char.isdigit():
 				self.tokens.append(self.read_number())
@@ -279,7 +287,7 @@ class Lexer:
 		else:
 			raise StarchSyntaxError("unterminated string literal", start_line, start_ctx, start_col, self.file)
 
-		return Token(TokenType.STRING, result, self.line)
+		return Token(TokenType.STRING, result, start_line, start_col, start_ctx)
 
 	def read_number(self) -> Token:
 		result = ""
@@ -292,15 +300,15 @@ class Lexer:
 				case "x":
 					while self.peek() and self.peek() in "0123456789abcdefABCDEF":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 16), self.line)
+					return self.token(TokenType.NUMBER, int(result, 16))
 				case "o":
 					while self.peek() and self.peek() in "01234567":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 8), self.line)
+					return self.token(TokenType.NUMBER, int(result, 8))
 				case "b":
 					while self.peek() and self.peek() in "01":
 						result += self.advance()
-					return Token(TokenType.NUMBER, int(result, 2), self.line)
+					return self.token(TokenType.NUMBER, int(result, 2))
 		elif self.peek(1).lower() == "e":
 			result = self.advance()
 			result += self.advance()
@@ -309,7 +317,7 @@ class Lexer:
 				result += self.advance()
 			while self.peek() and self.peek().isdigit():
 				result += self.advance()
-			return Token(TokenType.FLOAT, float(result), self.line)
+			return self.token(TokenType.FLOAT, float(result))
 
 		while self.peek() and self.peek().isdigit():
 			result += self.advance()
@@ -320,9 +328,9 @@ class Lexer:
 			while self.peek() and self.peek().isdigit():
 				result += self.advance()
 
-			return Token(TokenType.FLOAT, float(result), self.line)
+			return self.token(TokenType.FLOAT, float(result))
 
-		return Token(TokenType.NUMBER, int(result), self.line)
+		return self.token(TokenType.NUMBER, int(result))
 
 	def read_ident_or_keyword(self) -> Token:
 		result = ""
@@ -358,4 +366,4 @@ class Lexer:
 		if result in ("true", "false"):
 			value = result == "true"
 
-		return Token(type, value, self.line)
+		return self.token(type, value)
