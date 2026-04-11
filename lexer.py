@@ -1,84 +1,83 @@
+from enum import StrEnum
 from dataclasses import dataclass
 from errors import StarchError, StarchSyntaxError
 
-class TokenType:
+class TokenType(StrEnum):
 	# Literals
-	NUMBER = "NUMBER"
-	FLOAT = "FLOAT"
-	STRING = "STRING"
-	BOOL = "BOOL"
+	NUMBER = "number"
+	FLOAT = "float"
+	STRING = "string"
+	BOOL = "boolean"
 	# Keywords
-	VAR = "VAR"
-	CONST = "CONST"
-	FUNCTION = "FUNCTION"
-	RETURN = "RETURN"
-	IF = "IF"
-	ELIF = "ELIF"
-	ELSE = "ELSE"
-	FOR = "FOR"
-	WHILE = "WHILE"
-	IN = "IN"
-	USING = "USING"
-	WATCH = "WATCH"
-	DERIVE = "DERIVE"
-	CLASS = "CLASS"
-	THIS = "THIS"
-	SUPER = "SUPER"
+	VAR = "'var'"
+	CONST = "'const'"
+	FUNCTION = "'function'"
+	RETURN = "'return'"
+	IF = "'if'"
+	ELIF = "'elif'"
+	ELSE = "'else'"
+	FOR = "'for'"
+	WHILE = "'while'"
+	IN = "'in'"
+	USING = "'using'"
+	WATCH = "'watch'"
+	DERIVE = "'derive'"
+	CLASS = "'class'"
 	# Identifiers
-	IDENT = "IDENT"
+	IDENT = "identifier"
 	# Operators
-	PLUS = "PLUS"
-	MINUS = "MINUS"
-	STAR = "STAR"
-	SLASH = "SLASH"
-	CARET = "CARET"
-	PERCENT = "PERCENT"
-	CONCAT = "CONCAT"
-	PIPELINE = "PIPELINE"
-	RANGE = "RANGE"
+	PLUS = "'+'"
+	MINUS = "'-'"
+	STAR = "'*'"
+	SLASH = "'/'"
+	CARET = "'^'"
+	PERCENT = "'%'"
+	CONCAT = "'~'"
+	PIPELINE = "'~>'"
+	RANGE = "'..'"
 	# Comparison
-	EQ = "EQ"
-	NEQ = "NEQ"
-	LT = "LT"
-	GT = "GT"
-	LTE = "LTE"
-	GTE = "GTE"
-	APPROX = "APPROX"
+	EQ = "'=='"
+	NEQ = "'!='"
+	LT = "'>'"
+	GT = "'<'"
+	LTE = "'<='"
+	GTE = "'>='"
+	APPROX = "'≈'"
 	# Logical
-	AND = "AND"
-	OR = "OR"
-	NOT = "NOT"
+	AND = "'and'"
+	OR = "'or'"
+	NOT = "'not'"
 	# Punctuation
-	LPAREN = "LPAREN"
-	RPAREN = "RPAREN"
-	LBRACE = "LBRACE"
-	RBRACE = "RBRACE"
-	LBRACKET = "LBRACKET"
-	RBRACKET = "RBRACKET"
-	SEMICOLON = "SEMICOLON"
-	COLON = "COLON"
-	COMMA = "COMMA"
-	DOT = "DOT"
-	ARROW = "ARROW"
-	ASSIGN = "ASSIGN"
+	LPAREN = "'('"
+	RPAREN = "')'"
+	LBRACE = "'{'"
+	RBRACE = "'}'"
+	LBRACKET = "'['"
+	RBRACKET = "']'"
+	SEMICOLON = "';'"
+	COLON = "':'"
+	COMMA = "','"
+	DOT = "'.'"
+	ARROW = "'->'"
+	ASSIGN = "'='"
 	# Compound assignment
-	PLUS_ASSIGN = "PLUS_ASSIGN"
-	MINUS_ASSIGN = "MINUS_ASSIGN"
-	STAR_ASSIGN = "STAR_ASSIGN"
-	SLASH_ASSIGN = "SLASH_ASSIGN"
+	PLUS_ASSIGN = "'+='"
+	MINUS_ASSIGN = "'-='"
+	STAR_ASSIGN = "'*='"
+	SLASH_ASSIGN = "'/='"
 	# Special
-	EOF = "EOF"
+	EOF = "end of file"
 
 @dataclass
 class Token:
-	type: str
+	type: TokenType
 	value: str | int | float | bool | None = None
 	line: int = 0
 	col: int = 0
 	source_line: str = ""
 
 	def __repr__(self):
-		return f"Token(type='{self.type}', value={repr(self.value)})"
+		return f"Token(type='{self.type.name}', value={repr(self.value)})"
 
 class Lexer:
 	def __init__(self, code: str, file: str = "<starch-input>"):
@@ -355,9 +354,7 @@ class Lexer:
 			"and": TokenType.AND,
 			"or": TokenType.OR,
 			"not": TokenType.NOT,
-			"class": TokenType.CLASS,
-			"this": TokenType.THIS,
-			"super": TokenType.SUPER,
+			"class": TokenType.CLASS
 		}
 
 		type = keywords.get(result, TokenType.IDENT)

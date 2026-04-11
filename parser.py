@@ -77,7 +77,7 @@ class Parser:
 		self.pos += 1
 		return token
 
-	def expect(self, type: str) -> Token:
+	def expect(self, type: TokenType) -> Token:
 		if self.current.type != type:
 			raise self.error(StarchTypeError, f"Expected {type}, got {self.current.type}")
 		return self.advance()
