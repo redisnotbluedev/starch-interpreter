@@ -85,6 +85,9 @@ class Token:
 	col: int = 0
 	source_line: str = ""
 
+	def __repr__(self):
+		return f"Token(type='{self.type}', value={repr(self.value)})"
+
 class Lexer:
 	def __init__(self, code: str, file: str = "<starch-input>"):
 		self.code = code

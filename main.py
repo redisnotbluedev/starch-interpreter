@@ -1,5 +1,6 @@
 import sys
 from lexer import Lexer
+from parser import Parser
 from errors import StarchError
 
 def excepthook(type, value, traceback):
@@ -16,3 +17,7 @@ if __name__ == "__main__":
 		lexer = Lexer(f.read(), "main.starch")
 		tokens = lexer.lex()
 		print(tokens)
+
+		parser = Parser(tokens, "main.starch")
+		tree = parser.parse()
+		print(tree)
