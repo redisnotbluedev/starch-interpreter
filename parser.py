@@ -268,7 +268,7 @@ class Parser:
 				return self.parse_expression_statement()
 
 	def parse_var_decl(self) -> VarDeclaration:
-		token = self.advance()
+		token = self.expect(TokenType.VAR)
 
 		name = self.expect(TokenType.IDENT).value
 		type = None
