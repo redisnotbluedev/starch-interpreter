@@ -365,6 +365,8 @@ class Lexer:
 			"for": TokenType.FOR,
 			"while": TokenType.WHILE,
 			"in": TokenType.IN,
+			"break": TokenType.BREAK,
+			"continue": TokenType.CONTINUE,
 			"using": TokenType.USING,
 			"watch": TokenType.WATCH,
 			"derive": TokenType.DERIVE,
