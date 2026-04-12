@@ -1,1 +1,3 @@
-derive x: str = "Money: " ~ money;
+function main(text: str or "hello world") -> void {
+	print(text);
+}

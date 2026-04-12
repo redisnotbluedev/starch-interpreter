@@ -21,6 +21,12 @@ class Node():
 		return f"{self.__class__.__name__}({inner})"
 
 @dataclass(repr=False)
+class Parameter(Node):
+	name: str
+	type: str | None
+	default: Node | None
+
+@dataclass(repr=False)
 class VarDeclaration(Node):
 	name: str
 	type: str | None
@@ -69,7 +75,7 @@ class BinaryOp(Node):
 
 @dataclass(repr=False)
 class Lambda(Node):
-	params: list
+	params: list[Parameter]
 	body: list[Node]
 
 class Break(Node): ...
@@ -77,7 +83,7 @@ class Continue(Node): ...
 
 @dataclass(repr=False)
 class Return(Node):
-	value: Node | None = None
+	value: Node | None
 
 @dataclass(repr=False)
 class Throw(Node):
@@ -119,6 +125,13 @@ class WatchStatement(Node):
 class Assign(Node):
 	variable: Node
 	value: Node
+
+@dataclass(repr=False)
+class Function(Node):
+	name: str
+	params: list[Parameter]
+	type: str | None
+	block: list[Node]
 
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
@@ -191,7 +204,7 @@ class Parser:
 				self.advance()
 		return args
 
-	def parse_params(self) -> list:
+	def parse_params(self) -> list[Parameter]:
 		params = []
 		while self.current.type != TokenType.RPAREN:
 			name = self.expect(TokenType.IDENT)
@@ -203,7 +216,7 @@ class Parser:
 			if self.current.type == TokenType.OR:
 				self.advance()
 				default = self.parse_expression()
-			params.append((name.value, type, default))
+			params.append(node(name, Parameter, name.value, type, default))
 			if self.current.type == TokenType.COMMA:
 				self.advance()
 		return params
@@ -293,6 +306,8 @@ class Parser:
 
 				self.terminate()
 				return node(token, Using, names)
+			case TokenType.FUNCTION:
+				return self.parse_function()
 			case _:
 				return self.parse_expression_statement()
 
@@ -350,13 +365,11 @@ class Parser:
 		return node(token, IfStatement, condition, then, branches, else_block)
 
 	def parse_while(self) -> WhileLoop:
-		token = self.current
-		self.expect(TokenType.WHILE)
+		token = self.expect(TokenType.WHILE)
 		return node(token, WhileLoop, self.parse_expression(), self.parse_block())
 
 	def parse_for(self) -> ForLoop:
-		token = self.current
-		self.expect(TokenType.FOR)
+		token = self.expect(TokenType.FOR)
 		identifier = self.expect(TokenType.IDENT)
 		self.expect(TokenType.IN)
 		return node(token, ForLoop, identifier, self.parse_expression(), self.parse_block())
@@ -366,6 +379,20 @@ class Parser:
 		self.expect(TokenType.WATCH)
 		identifier = self.expect(TokenType.IDENT)
 		return node(token, WatchStatement, identifier, self.parse_block())
+
+	def parse_function(self) -> Function:
+		token = self.expect(TokenType.FUNCTION)
+		name = self.expect(TokenType.IDENT).value
+		self.expect(TokenType.LPAREN)
+		params = self.parse_params()
+		self.expect(TokenType.RPAREN)
+
+		type = None
+		if self.current.type == TokenType.ARROW:
+			self.advance()
+			type = self.expect(TokenType.IDENT).value
+
+		return node(token, Function, name, params, type, self.parse_block())
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
