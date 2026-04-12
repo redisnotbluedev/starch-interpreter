@@ -1,1 +1,5 @@
-x not in foobar;
+var money: int = 0;
+var label: str = "Money: 0";
+watch money {
+	label = "Money: " ~ money;
+}

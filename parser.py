@@ -103,6 +103,11 @@ class ForLoop(Node):
 	collection: Node
 	block: list[Node]
 
+@dataclass(repr=False)
+class WatchStatement(Node):
+	variable: Identifier
+	block: list[Node]
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -217,6 +222,8 @@ class Parser:
 				return self.parse_while()
 			case TokenType.FOR:
 				return self.parse_for()
+			case TokenType.WATCH:
+				return self.parse_watch()
 			case TokenType.BREAK:
 				statement = node(self.advance(), Break)
 				self.terminate()
@@ -301,9 +308,17 @@ class Parser:
 	def parse_for(self) -> ForLoop:
 		token = self.current
 		self.expect(TokenType.FOR)
-		variable = self.expect(TokenType.IDENT).value
+		identifier = self.expect(TokenType.IDENT)
+		variable = node(identifier, Identifier, identifier.value)
 		self.expect(TokenType.IN)
 		return node(token, ForLoop, variable, self.parse_expression(), self.parse_block())
+
+	def parse_watch(self) -> WatchStatement:
+		token = self.current
+		self.expect(TokenType.WATCH)
+		identifier = self.expect(TokenType.IDENT)
+		variable = node(identifier, Identifier, identifier.value)
+		return node(token, WatchStatement, variable, self.parse_block())
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
