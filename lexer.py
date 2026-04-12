@@ -19,6 +19,7 @@ class TokenType(StrEnum):
 	FOR = "'for'"
 	WHILE = "'while'"
 	IN = "'in'"
+	IS = "'is'"
 	BREAK = "'break'"
 	CONTINUE = "'continue'"
 	USING = "'using'"
@@ -368,6 +369,7 @@ class Lexer:
 			"for": TokenType.FOR,
 			"while": TokenType.WHILE,
 			"in": TokenType.IN,
+			"is": TokenType.IS,
 			"break": TokenType.BREAK,
 			"continue": TokenType.CONTINUE,
 			"using": TokenType.USING,
