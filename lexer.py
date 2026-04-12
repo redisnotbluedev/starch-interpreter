@@ -19,6 +19,8 @@ class TokenType(StrEnum):
 	FOR = "'for'"
 	WHILE = "'while'"
 	IN = "'in'"
+	BREAK = "'break'"
+	CONTINUE = "'continue'"
 	USING = "'using'"
 	WATCH = "'watch'"
 	DERIVE = "'derive'"
