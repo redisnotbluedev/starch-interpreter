@@ -165,7 +165,29 @@ class Parser:
 	"""
 
 	def parse_expression(self) -> Node:
-		return self.parse_exponent()
+		return self.parse_additive()
+
+	def parse_additive(self) -> Node:
+		left = self.parse_multiplicative()
+
+		while self.current.type in (TokenType.PLUS, TokenType.MINUS):
+			token = self.current
+			operator = {TokenType.PLUS: "+", TokenType.MINUS: "-"}[self.advance().type]
+			right = self.parse_multiplicative()
+			left = node(token, BinaryOp, operator, left, right)
+
+		return left
+
+	def parse_multiplicative(self) -> Node:
+		left = self.parse_exponent()
+
+		while self.current.type in (TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
+			token = self.current
+			operator = {TokenType.STAR: "*", TokenType.SLASH: "/", TokenType.PERCENT: "%"}[self.advance().type]
+			right = self.parse_exponent()
+			left = node(token, BinaryOp, operator, left, right)
+
+		return left
 
 	def parse_exponent(self) -> Node:
 		base = self.parse_unary()
