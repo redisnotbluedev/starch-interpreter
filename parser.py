@@ -51,7 +51,7 @@ class ExpressionStatement(Node):
 
 @dataclass(repr=False)
 class UnaryOp(Node):
-	operator: str
+	operator: TokenType
 	operand: Node
 
 @dataclass(repr=False)
@@ -93,8 +93,14 @@ class IfStatement(Node):
 	else_block: list[Node] | None
 
 @dataclass(repr=False)
-class WhileStatement(Node):
+class WhileLoop(Node):
 	condition: Node
+	block: list[Node]
+
+@dataclass(repr=False)
+class ForLoop(Node):
+	variable: Identifier
+	collection: Node
 	block: list[Node]
 
 def node(token: Token, type: type[Node], *args, **kwargs):
@@ -209,6 +215,8 @@ class Parser:
 				return self.parse_if()
 			case TokenType.WHILE:
 				return self.parse_while()
+			case TokenType.FOR:
+				return self.parse_for()
 			case TokenType.BREAK:
 				statement = node(self.advance(), Break)
 				self.terminate()
@@ -285,10 +293,17 @@ class Parser:
 
 		return node(token, IfStatement, condition, then, branches, else_block)
 
-	def parse_while(self) -> WhileStatement:
+	def parse_while(self) -> WhileLoop:
 		token = self.current
 		self.expect(TokenType.WHILE)
-		return node(token, WhileStatement, self.parse_expression(), self.parse_block())
+		return node(token, WhileLoop, self.parse_expression(), self.parse_block())
+
+	def parse_for(self) -> ForLoop:
+		token = self.current
+		self.expect(TokenType.FOR)
+		variable = self.expect(TokenType.IDENT).value
+		self.expect(TokenType.IN)
+		return node(token, ForLoop, variable, self.parse_expression(), self.parse_block())
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
