@@ -1,3 +1,9 @@
-function main(text: str or "hello world") -> void {
-	print(text);
+match variable {
+	case "value1" {
+		doThingOne();
+	}
+
+	case "value2" {
+		doThingTwo();
+	}
 }

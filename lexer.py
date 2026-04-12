@@ -30,6 +30,8 @@ class TokenType(StrEnum):
 	CATCH = "'catch'"
 	FINALLY = "'finally'"
 	THROW = "'throw'"
+	MATCH = "'match'"
+	CASE = "'case'"
 	# Identifiers
 	IDENT = "identifier"
 	# Operators
@@ -381,7 +383,9 @@ class Lexer:
 			"try": TokenType.TRY,
 			"catch": TokenType.CATCH,
 			"finally": TokenType.FINALLY,
-			"throw": TokenType.THROW
+			"throw": TokenType.THROW,
+			"match": TokenType.MATCH,
+			"case": TokenType.CASE
 		}
 
 		type = keywords.get(result, TokenType.IDENT)

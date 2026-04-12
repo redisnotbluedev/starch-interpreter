@@ -133,6 +133,16 @@ class Function(Node):
 	type: str | None
 	block: list[Node]
 
+@dataclass(repr=False)
+class MatchCase(Node):
+	patterns: list[Node]
+	block: list[Node]
+
+@dataclass(repr=False)
+class MatchStatement(Node):
+	expression: Node
+	cases: list[MatchCase]
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -175,12 +185,6 @@ class Parser:
 				raise self.error(StarchSyntaxError, f"Expected {TokenType.SEMICOLON}, got {self.current.type}")
 
 		self.advance()
-
-	def match(self, *types: TokenType) -> bool:
-		if self.current.type in types:
-			self.advance()
-			return True
-		return False
 
 	def is_lambda(self) -> bool:
 		pos = self.pos + 1  # skip LPAREN
@@ -308,6 +312,8 @@ class Parser:
 				return node(token, Using, names)
 			case TokenType.FUNCTION:
 				return self.parse_function()
+			case TokenType.MATCH:
+				return self.parse_match()
 			case _:
 				return self.parse_expression_statement()
 
@@ -393,6 +399,22 @@ class Parser:
 			type = self.expect(TokenType.IDENT).value
 
 		return node(token, Function, name, params, type, self.parse_block())
+
+	def parse_match(self) -> MatchStatement:
+		token = self.advance()
+		variable = self.expect(TokenType.IDENT).value
+		self.expect(TokenType.LBRACE)
+		cases = []
+		while self.current.type == TokenType.CASE:
+			case = self.advance()
+			patterns = [self.parse_expression()]
+			while self.current.type == TokenType.COMMA:
+				# double while loop is CRAZYYY
+				self.advance()
+				patterns.append(self.parse_expression())
+			cases.append(node(case, MatchCase, patterns, self.parse_block()))
+		self.expect(TokenType.RBRACE)
+		return node(token, MatchStatement, variable, cases)
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
