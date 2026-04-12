@@ -23,6 +23,10 @@ class TokenType(StrEnum):
 	WATCH = "'watch'"
 	DERIVE = "'derive'"
 	CLASS = "'class'"
+	TRY = "'try'"
+	CATCH = "'catch'"
+	FINALLY = "'finally'"
+	THROW = "'throw'"
 	# Identifiers
 	IDENT = "identifier"
 	# Operators
@@ -367,7 +371,11 @@ class Lexer:
 			"and": TokenType.AND,
 			"or": TokenType.OR,
 			"not": TokenType.NOT,
-			"class": TokenType.CLASS
+			"class": TokenType.CLASS,
+			"try": TokenType.TRY,
+			"catch": TokenType.CATCH,
+			"finally": TokenType.FINALLY,
+			"throw": TokenType.THROW
 		}
 
 		type = keywords.get(result, TokenType.IDENT)

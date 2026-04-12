@@ -1,6 +1,1 @@
-(true == false);
-const BAD = false;
-(false != BAD);
-
-(x > y);
-(x <= y);
+pass;
