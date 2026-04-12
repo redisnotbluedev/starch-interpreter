@@ -380,11 +380,17 @@ class Parser:
 	def parse_comparison(self) -> Node:
 		left = self.parse_concat()
 
-		while self.current.type in (TokenType.EQ, TokenType.NEQ, TokenType.GT, TokenType.GTE, TokenType.LT, TokenType.LTE, TokenType.APPROX):
+		while self.current.type in (TokenType.EQ, TokenType.NEQ, TokenType.GT, TokenType.GTE, TokenType.LT, TokenType.LTE, TokenType.APPROX, TokenType.IN, TokenType.NOT):
 			token = self.current
-			operator = self.advance().type
-			right = self.parse_concat()
-			left = node(token, BinaryOp, operator, left, right)
+			if token.type == TokenType.NOT and self.peek().type == TokenType.IN:
+				self.advance()
+				self.advance()
+				right = self.parse_concat()
+				left = node(token, UnaryOp, TokenType.NOT, node(token, BinaryOp, TokenType.IN, left, right))
+			else:
+				operator = self.advance().type
+				right = self.parse_concat()
+				left = node(token, BinaryOp, operator, left, right)
 
 		return left
 
