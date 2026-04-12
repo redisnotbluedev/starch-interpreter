@@ -60,6 +60,22 @@ class BinaryOp(Node):
 	left: Node
 	right: Node
 
+@dataclass(repr=False)
+class Lambda(Node):
+	params: list
+	body: list[Node]
+
+class Break(Node): ...
+class Continue(Node): ...
+
+@dataclass(repr=False)
+class Return(Node):
+	value: Node | None = None
+
+@dataclass(repr=False)
+class Throw(Node):
+	exception: Node
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -109,6 +125,20 @@ class Parser:
 			return True
 		return False
 
+	def is_lambda(self) -> bool:
+		pos = self.pos + 1  # skip LPAREN
+		depth = 1
+		while pos < len(self.tokens):
+			match self.tokens[pos].type:
+				case TokenType.LPAREN:
+					depth += 1
+				case TokenType.RPAREN:
+					depth -= 1
+					if depth == 0:
+						return self.tokens[pos + 1].type == TokenType.FAT_ARROW
+			pos += 1
+		return False
+
 	def parse_args(self) -> list[Node]:
 		args = []
 		while self.current.type != TokenType.RPAREN:
@@ -116,6 +146,23 @@ class Parser:
 			if self.current.type == TokenType.COMMA:
 				self.advance()
 		return args
+
+	def parse_params(self) -> list:
+		params = []
+		while self.current.type != TokenType.RPAREN:
+			name = self.expect(TokenType.IDENT)
+			type = None
+			default = None
+			if self.current.type == TokenType.COLON:
+				self.advance()
+				type = self.expect(TokenType.IDENT).value
+			if self.current.type == TokenType.OR:
+				self.advance()
+				default = self.parse_expression()
+			params.append((name.value, type, default))
+			if self.current.type == TokenType.COMMA:
+				self.advance()
+		return params
 
 	def parse(self) -> Program:
 		statements = []
@@ -125,10 +172,33 @@ class Parser:
 
 		return Program(statements)
 
+	def parse_block(self) -> list[Node]:
+		self.expect(TokenType.LBRACE)
+		statements = []
+		while self.current.type != TokenType.RBRACE:
+			statements.append(self.parse_statement())
+		self.expect(TokenType.RBRACE)
+		return statements
+
 	def parse_statement(self) -> Node:
 		match self.current.type:
 			case TokenType.VAR | TokenType.CONST:
 				return self.parse_var_decl()
+			case TokenType.BREAK:
+				statement = node(self.advance(), Break)
+				self.terminate()
+				return statement
+			case TokenType.CONTINUE:
+				statement = node(self.advance(), Continue)
+				self.terminate()
+				return statement
+			case TokenType.RETURN:
+				token = self.advance()
+				expression = None
+				if self.current != TokenType.SEMICOLON:
+					expression = self.parse_expression()
+				self.terminate()
+				return node(token, Return, expression)
 			case _:
 				return self.parse_expression_statement()
 
@@ -154,23 +224,6 @@ class Parser:
 		expression = self.parse_expression()
 		self.terminate()
 		return node(token, ExpressionStatement, expression)
-
-	"""
-	parse_expression        # entry point
-    parse_pipeline      # ~>  (lowest precedence)
-        parse_or        # or
-            parse_and   # and
-                parse_not       # not (unary)
-                    parse_comparison    # == != < > <= >= ≈
-                        parse_concat    # ~
-                            parse_range     # ..
-                                parse_additive      # + -
-                                    parse_multiplicative    # * / %
-                                        parse_exponent      # ^
-                                            parse_unary     # - (negative)
-                                                parse_call      # func() obj.member
-                                                    parse_primary   # literals, identifiers, (expr)
-	"""
 
 	def parse_expression(self) -> Node:
 		return self.parse_pipeline()
@@ -335,6 +388,13 @@ class Parser:
 			case TokenType.IDENT:
 				return node(self.advance(), Identifier, token.value)
 			case TokenType.LPAREN:
+				if self.is_lambda():
+					self.advance()
+					params = self.parse_params()
+					self.expect(TokenType.RPAREN)
+					self.expect(TokenType.FAT_ARROW)
+					body = self.parse_block()
+					return node(token, Lambda, params, body)
 				self.advance()
 				expression = self.parse_expression()
 				self.expect(TokenType.RPAREN)

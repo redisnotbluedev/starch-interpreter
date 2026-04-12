@@ -22,6 +22,7 @@ class TokenType(StrEnum):
 	BREAK = "'break'"
 	CONTINUE = "'continue'"
 	USING = "'using'"
+	FROM = "'from'"
 	WATCH = "'watch'"
 	DERIVE = "'derive'"
 	CLASS = "'class'"
@@ -368,6 +369,7 @@ class Lexer:
 			"break": TokenType.BREAK,
 			"continue": TokenType.CONTINUE,
 			"using": TokenType.USING,
+			"from": TokenType.FROM,
 			"watch": TokenType.WATCH,
 			"derive": TokenType.DERIVE,
 			"true": TokenType.BOOL,

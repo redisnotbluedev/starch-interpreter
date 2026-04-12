@@ -1,8 +1,1 @@
-// should output ["JOHN", "THE", "ALIEN"]
-Person()
-	~> .face("green")
-	~> .name("John the Alien")
-	~> .socials("@johnalien")
-	~> .name
-		~> .upper()
-		~> .split(" ");
+((name: str or "John") => { print(name); })("Bob");
