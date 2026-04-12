@@ -1,1 +1,1 @@
-var x: str = "hello world";
+derive x: str = "Money: " ~ money;

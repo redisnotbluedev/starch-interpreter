@@ -28,6 +28,13 @@ class VarDeclaration(Node):
 	mutable: bool
 
 @dataclass(repr=False)
+class DerivedVariable(Node):
+	name: str
+	type: str | None
+	value: Node
+	dependencies: set[str]
+
+@dataclass(repr=False)
 class Literal(Node):
 	value: int | float | str | bool
 
@@ -43,7 +50,7 @@ class FunctionCall(Node):
 @dataclass(repr=False)
 class MemberAccess(Node):
 	callee: Node
-	member: Identifier
+	member: str
 
 @dataclass(repr=False)
 class ExpressionStatement(Node):
@@ -99,13 +106,13 @@ class WhileLoop(Node):
 
 @dataclass(repr=False)
 class ForLoop(Node):
-	variable: Identifier
+	variable: str
 	collection: Node
 	block: list[Node]
 
 @dataclass(repr=False)
 class WatchStatement(Node):
-	variable: Identifier
+	variable: str
 	block: list[Node]
 
 @dataclass(repr=False)
@@ -201,6 +208,26 @@ class Parser:
 				self.advance()
 		return params
 
+	def find_identifiers(self, node: Node) -> set[str]:
+		match node:
+			case Identifier(name=name):
+				return {name}
+			case BinaryOp(left=left, right=right):
+				return self.find_identifiers(left) | self.find_identifiers(right)
+			case UnaryOp(operand=operand):
+				return self.find_identifiers(operand)
+			case FunctionCall(callee=callee, args=args):
+				deps = self.find_identifiers(callee)
+				for arg in args:
+					deps |= self.find_identifiers(arg)
+				return deps
+			case MemberAccess(callee=callee):
+				return self.find_identifiers(callee)
+			case Literal():
+				return set()
+			case _:
+				return set()
+
 	def parse(self) -> Program:
 		statements = []
 
@@ -221,6 +248,8 @@ class Parser:
 		match self.current.type:
 			case TokenType.VAR | TokenType.CONST:
 				return self.parse_var_decl()
+			case TokenType.DERIVE:
+				return self.parse_derive()
 			case TokenType.IF:
 				return self.parse_if()
 			case TokenType.WHILE:
@@ -284,9 +313,24 @@ class Parser:
 
 		return node(token, VarDeclaration, name, type, value, token.type == TokenType.VAR)
 
+	def parse_derive(self) -> DerivedVariable:
+		token = self.expect(TokenType.DERIVE)
+		name = self.expect(TokenType.IDENT).value
+		type = None
+
+		if self.current.type == TokenType.COLON:
+			self.advance()
+			type = self.expect(TokenType.IDENT).value
+
+		self.expect(TokenType.ASSIGN)
+		value = self.parse_expression()
+		self.terminate()
+
+		dependencies = self.find_identifiers(value)
+		return node(token, DerivedVariable, name, type, value, dependencies)
+
 	def parse_if(self) -> IfStatement:
-		token = self.current
-		self.expect(TokenType.IF)
+		token = self.expect(TokenType.IF)
 		condition = self.parse_expression()
 		then = self.parse_block()
 
@@ -314,16 +358,14 @@ class Parser:
 		token = self.current
 		self.expect(TokenType.FOR)
 		identifier = self.expect(TokenType.IDENT)
-		variable = node(identifier, Identifier, identifier.value)
 		self.expect(TokenType.IN)
-		return node(token, ForLoop, variable, self.parse_expression(), self.parse_block())
+		return node(token, ForLoop, identifier, self.parse_expression(), self.parse_block())
 
 	def parse_watch(self) -> WatchStatement:
 		token = self.current
 		self.expect(TokenType.WATCH)
 		identifier = self.expect(TokenType.IDENT)
-		variable = node(identifier, Identifier, identifier.value)
-		return node(token, WatchStatement, variable, self.parse_block())
+		return node(token, WatchStatement, identifier, self.parse_block())
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
