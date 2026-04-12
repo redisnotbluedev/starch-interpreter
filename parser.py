@@ -108,6 +108,11 @@ class WatchStatement(Node):
 	variable: Identifier
 	block: list[Node]
 
+@dataclass(repr=False)
+class Assign(Node):
+	variable: Node
+	value: Node
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -323,6 +328,30 @@ class Parser:
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
 		expression = self.parse_expression()
+
+		if self.current.type == TokenType.ASSIGN:
+			if not isinstance(expression, Identifier | MemberAccess):
+				raise self.error(StarchSyntaxError, "invalid assignment target")
+
+			self.advance()
+			value = self.parse_expression()
+			self.terminate()
+			return node(token, Assign, expression, value)
+
+		if self.current.type in (TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN, TokenType.STAR_ASSIGN, TokenType.SLASH_ASSIGN):
+			if not isinstance(expression, Identifier | MemberAccess):
+				raise self.error(StarchSyntaxError, "invalid assignment target")
+
+			operator = {
+				TokenType.PLUS_ASSIGN: TokenType.PLUS,
+				TokenType.MINUS_ASSIGN: TokenType.MINUS,
+				TokenType.STAR_ASSIGN: TokenType.STAR,
+				TokenType.SLASH_ASSIGN: TokenType.SLASH
+			}[self.advance().type]
+			value = self.parse_expression()
+			self.terminate()
+			return node(token, Assign, expression, node(token, BinaryOp, operator, expression, value))
+
 		self.terminate()
 		return node(token, ExpressionStatement, expression)
 
