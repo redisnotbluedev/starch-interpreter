@@ -1,4 +1,3 @@
-from re import L
 from dataclasses import dataclass
 from lexer import Token, TokenType
 from errors import StarchError, StarchSyntaxError
