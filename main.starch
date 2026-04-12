@@ -1,0 +1,13 @@
+class Human {
+	var name: str = "";
+	var tag: str = "";
+	derive size: int = weight * height;
+
+	watch name {
+		tag = "Name: " ~ name;
+	}
+
+	function _init(name: str) -> void {
+		this.name = name;
+	}
+}

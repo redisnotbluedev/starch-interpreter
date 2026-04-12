@@ -127,7 +127,7 @@ class Assign(Node):
 	value: Node
 
 @dataclass(repr=False)
-class Function(Node):
+class FunctionDeclaration(Node):
 	name: str
 	params: list[Parameter]
 	type: str | None
@@ -149,6 +149,15 @@ class TryStatement(Node):
 	catch_variable: str | None
 	catch_body: list[Node]
 	finally_body: list[Node]
+
+@dataclass(repr=False)
+class ClassDeclaration(Node):
+	name: str
+	parent: str | None
+	fields: list[VarDeclaration]
+	methods: list[FunctionDeclaration]
+	watchers: list[WatchStatement]
+	derivatives: list[DerivedVariable]
 
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
@@ -323,6 +332,9 @@ class Parser:
 				return self.parse_match()
 			case TokenType.TRY:
 				return self.parse_try()
+			case TokenType.CLASS:
+				# Oh boy. Ohhhhhh boy.
+				return self.parse_class()
 			case _:
 				return self.parse_expression_statement()
 
@@ -392,10 +404,10 @@ class Parser:
 	def parse_watch(self) -> WatchStatement:
 		token = self.current
 		self.expect(TokenType.WATCH)
-		identifier = self.expect(TokenType.IDENT)
+		identifier = self.expect(TokenType.IDENT).value
 		return node(token, WatchStatement, identifier, self.parse_block())
 
-	def parse_function(self) -> Function:
+	def parse_function(self) -> FunctionDeclaration:
 		token = self.expect(TokenType.FUNCTION)
 		name = self.expect(TokenType.IDENT).value
 		self.expect(TokenType.LPAREN)
@@ -407,7 +419,7 @@ class Parser:
 			self.advance()
 			type = self.expect(TokenType.IDENT).value
 
-		return node(token, Function, name, params, type, self.parse_block())
+		return node(token, FunctionDeclaration, name, params, type, self.parse_block())
 
 	def parse_match(self) -> MatchStatement:
 		token = self.advance()
@@ -448,6 +460,30 @@ class Parser:
 			raise self.error(StarchSyntaxError, "expected 'catch' or 'finally' block")
 
 		return node(token, TryStatement, block, catch_variable, catch_block, finally_block)
+
+	def parse_class(self) -> ClassDeclaration:
+		token = self.advance()
+		name = self.expect(TokenType.IDENT).value
+		parent = None
+
+		if self.current.type == TokenType.IS:
+			self.advance()
+			parent = self.expect(TokenType.IDENT).value
+
+		fields, methods, watchers, derivatives = [], [], [], []
+		for statement in self.parse_block():
+			match statement:
+				case VarDeclaration():
+					fields.append(statement)
+				case FunctionDeclaration():
+					methods.append(statement)
+				case WatchStatement():
+					watchers.append(statement)
+				case DerivedVariable():
+					derivatives.append(statement)
+				case _:
+					raise StarchSyntaxError("unexpected statement in class body", statement.line, statement.source_line, statement.col, self.file)
+		return node(token, ClassDeclaration, name, parent, fields, methods, watchers, derivatives)
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
