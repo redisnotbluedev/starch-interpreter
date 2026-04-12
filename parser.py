@@ -125,7 +125,7 @@ class Parser:
 			case _:
 				return self.parse_expression_statement()
 
-	def parse_var_decl(self):
+	def parse_var_decl(self) -> Node:
 		token = self.advance()
 
 		name = self.expect(TokenType.IDENT).value
@@ -165,10 +165,10 @@ class Parser:
                                                     parse_primary   # literals, identifiers, (expr)
 	"""
 
-	def parse_expression(self):
+	def parse_expression(self) -> Node:
 		return self.parse_exponent()
 
-	def parse_exponent(self):
+	def parse_exponent(self) -> Node:
 		base = self.parse_unary()
 		if self.current.type == TokenType.CARET:
 			token = self.current
@@ -176,7 +176,7 @@ class Parser:
 			return node(token, BinaryOp, "^", base, self.parse_exponent())
 		return base
 
-	def parse_unary(self):
+	def parse_unary(self) -> Node:
 		token = self.current
 		if token.type == TokenType.MINUS:
 			self.advance()
@@ -184,7 +184,7 @@ class Parser:
 
 		return self.parse_call()
 
-	def parse_call(self):
+	def parse_call(self) -> Node:
 		expression = self.parse_primary()
 
 		while True:
@@ -207,7 +207,7 @@ class Parser:
 				case _:
 					return expression
 
-	def parse_primary(self):
+	def parse_primary(self) -> Node:
 		token = self.current
 		match token.type:
 			case TokenType.NUMBER:
@@ -223,5 +223,4 @@ class Parser:
 				expression = self.parse_expression()
 				self.expect(TokenType.RPAREN)
 				return expression
-			case _:
-				raise self.error(StarchSyntaxError, f"unexpected token {token.type}")
+		raise self.error(StarchSyntaxError, f"unexpected token {token.type}")
