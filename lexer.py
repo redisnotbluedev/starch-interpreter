@@ -209,7 +209,6 @@ class Lexer:
 					";": TokenType.SEMICOLON,
 					":": TokenType.COLON,
 					",": TokenType.COMMA,
-					".": TokenType.DOT,
 					"≈": TokenType.APPROX,
 					"^": TokenType.CARET
 				}.get(char)
@@ -243,6 +242,12 @@ class Lexer:
 								self.advance()
 							else:
 								type = TokenType.LT
+						case ".":
+							if self.peek() == ".":
+								type = TokenType.RANGE
+								self.advance()
+							else:
+								type = TokenType.DOT
 				else:
 					self.advance()
 

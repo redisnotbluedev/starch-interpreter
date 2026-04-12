@@ -167,6 +167,17 @@ class Parser:
 	def parse_expression(self) -> Node:
 		return self.parse_additive()
 
+	# def parse_range(self) -> Node:
+	# 	left = self.parse_additive()
+
+	# 	while self.current.type == TokenType.RANGE:
+	# 		token = self.current
+	# 		operator = {TokenType.PLUS: "+", TokenType.MINUS: "-"}[self.advance().type]
+	# 		right = self.parse_additive()
+	# 		left = node(token, BinaryOp, operator, left, right)
+
+	# 	return left
+
 	def parse_additive(self) -> Node:
 		left = self.parse_multiplicative()
 
@@ -232,6 +243,8 @@ class Parser:
 		token = self.current
 		match token.type:
 			case TokenType.NUMBER:
+				return node(self.advance(), Literal, token.value)
+			case TokenType.FLOAT:
 				return node(self.advance(), Literal, token.value)
 			case TokenType.STRING:
 				return node(self.advance(), Literal, token.value)
