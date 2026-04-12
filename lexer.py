@@ -208,7 +208,7 @@ class Lexer:
 					self.tokens.append(self.token(TokenType.SLASH))
 			case '"':
 				self.tokens.append(self.read_string())
-			case _ if char in "(){}[];:,.=<>!≈^":
+			case _ if char in "(){}[];:,.=<>!≈^%":
 				type = {
 					"(": TokenType.LPAREN,
 					")": TokenType.RPAREN,
@@ -220,7 +220,8 @@ class Lexer:
 					":": TokenType.COLON,
 					",": TokenType.COMMA,
 					"≈": TokenType.APPROX,
-					"^": TokenType.CARET
+					"^": TokenType.CARET,
+					"%": TokenType.PERCENT
 				}.get(char)
 
 				if type is None:

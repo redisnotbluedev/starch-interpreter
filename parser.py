@@ -45,6 +45,14 @@ class Literal(Node):
 	value: int | float | str | bool
 
 @dataclass(repr=False)
+class ListLiteral(Node):
+	elements: list[Node]
+
+@dataclass(repr=False)
+class DictLiteral(Node):
+	pairs: list[tuple[Node, Node]]
+
+@dataclass(repr=False)
 class Identifier(Node):
 	name: str
 
@@ -339,7 +347,7 @@ class Parser:
 				return self.parse_expression_statement()
 
 	def parse_var_decl(self) -> VarDeclaration:
-		token = self.expect(TokenType.VAR)
+		token = self.advance()
 
 		name = self.expect(TokenType.IDENT).value
 		type = None
@@ -704,4 +712,20 @@ class Parser:
 				expression = self.parse_expression()
 				self.expect(TokenType.RPAREN)
 				return expression
+			case TokenType.LBRACE:
+				pairs = []
+				while self.current.type in (TokenType.COMMA, TokenType.LBRACE):
+					self.advance()
+					key = self.parse_expression()
+					self.expect(TokenType.COLON)
+					pairs.append((key, self.parse_expression()))
+				self.expect(TokenType.RBRACE)
+				return node(token, DictLiteral, pairs)
+			case TokenType.LBRACKET:
+				items = []
+				while self.current.type in (TokenType.COMMA, TokenType.LBRACKET):
+					self.advance()
+					items.append(self.parse_expression())
+				self.expect(TokenType.RBRACKET)
+				return node(token, ListLiteral, items)
 		raise self.error(StarchSyntaxError, f"unexpected token {token.type}")
