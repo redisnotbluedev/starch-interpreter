@@ -333,7 +333,7 @@ class Lexer:
 		while self.peek() and self.peek().isdigit():
 			result += self.advance()
 
-		if self.peek() == "." and self.peek(1):
+		if self.peek() == "." and self.peek(1).isdigit():
 			result += self.advance()
 
 			while self.peek() and self.peek().isdigit():
