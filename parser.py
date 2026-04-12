@@ -85,6 +85,13 @@ class ImportFrom(Node):
 	module: str
 	names: list[str]
 
+@dataclass(repr=False)
+class IfStatement(Node):
+	condition: Node
+	then_block: list[Node]
+	elif_branches: list[tuple[Node, list[Node]]]
+	else_block: list[Node] | None
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -193,6 +200,8 @@ class Parser:
 		match self.current.type:
 			case TokenType.VAR | TokenType.CONST:
 				return self.parse_var_decl()
+			case TokenType.IF:
+				return self.parse_if()
 			case TokenType.BREAK:
 				statement = node(self.advance(), Break)
 				self.terminate()
@@ -231,7 +240,7 @@ class Parser:
 			case _:
 				return self.parse_expression_statement()
 
-	def parse_var_decl(self) -> Node:
+	def parse_var_decl(self) -> VarDeclaration:
 		token = self.advance()
 
 		name = self.expect(TokenType.IDENT).value
@@ -248,7 +257,28 @@ class Parser:
 
 		return node(token, VarDeclaration, name, type, value, token.type == TokenType.VAR)
 
-	def parse_expression_statement(self) -> Node:
+	def parse_if(self) -> IfStatement:
+		token = self.current
+		self.expect(TokenType.IF)
+		condition = self.parse_expression()
+		then = self.parse_block()
+
+		branches = []
+		while self.current.type == TokenType.ELIF:
+			self.advance()
+			branches.append((
+				self.parse_expression(),
+				self.parse_block()
+			))
+
+		else_block = None
+		if self.current.type == TokenType.ELSE:
+			self.advance()
+			else_block = self.parse_block()
+
+		return node(token, IfStatement, condition, then, branches, else_block)
+
+	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
 		expression = self.parse_expression()
 		self.terminate()
