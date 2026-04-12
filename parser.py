@@ -92,6 +92,11 @@ class IfStatement(Node):
 	elif_branches: list[tuple[Node, list[Node]]]
 	else_block: list[Node] | None
 
+@dataclass(repr=False)
+class WhileStatement(Node):
+	condition: Node
+	block: list[Node]
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -202,6 +207,8 @@ class Parser:
 				return self.parse_var_decl()
 			case TokenType.IF:
 				return self.parse_if()
+			case TokenType.WHILE:
+				return self.parse_while()
 			case TokenType.BREAK:
 				statement = node(self.advance(), Break)
 				self.terminate()
@@ -277,6 +284,11 @@ class Parser:
 			else_block = self.parse_block()
 
 		return node(token, IfStatement, condition, then, branches, else_block)
+
+	def parse_while(self) -> WhileStatement:
+		token = self.current
+		self.expect(TokenType.WHILE)
+		return node(token, WhileStatement, self.parse_expression(), self.parse_block())
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current
