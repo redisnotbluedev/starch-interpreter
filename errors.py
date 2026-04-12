@@ -3,9 +3,9 @@ class StarchError(Exception):
 		self.line = line
 
 		if context:
-			text = f"File '{file}', line {line}\n\t{context}"
+			text = f"File '{file}', line {line}\n    {context.expandtabs(4)}"
 			if col:
-				text += "\n\t" + " " * (col - 1) + "^"
+				text += "\n    " + " " * (len(context[:col - 1].expandtabs(4))) + "^"
 		else:
 			text = f"File '{file}', line {line}"
 

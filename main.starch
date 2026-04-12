@@ -5,4 +5,4 @@ Person()
 	~> .socials("@johnalien")
 	~> .name
 		~> .upper()
-		~> .split(" ");
+		~> .split(" ")
