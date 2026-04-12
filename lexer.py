@@ -59,6 +59,7 @@ class TokenType(StrEnum):
 	COMMA = "','"
 	DOT = "'.'"
 	ARROW = "'->'"
+	FAT_ARROW = "'=>'"
 	ASSIGN = "'='"
 	# Compound assignment
 	PLUS_ASSIGN = "'+='"
@@ -176,6 +177,9 @@ class Lexer:
 				if self.peek() == "=":
 					self.advance()
 					self.tokens.append(self.token(TokenType.MINUS_ASSIGN))
+				elif self.peek() == ">":
+					self.advance()
+					self.tokens.append(self.token(TokenType.ARROW))
 				else:
 					self.tokens.append(self.token(TokenType.MINUS))
 			case "*":
@@ -220,6 +224,9 @@ class Lexer:
 						case "=":
 							if self.peek() == "=":
 								type = TokenType.EQ
+								self.advance()
+							elif self.peek() == ">":
+								type = TokenType.FAT_ARROW
 								self.advance()
 							else:
 								type = TokenType.ASSIGN

@@ -139,6 +139,9 @@ class Parser:
 	def parse_expression(self):
 		return self.parse_call()
 
+	def parse_unary(self):
+		pass
+
 	def parse_call(self):
 		expression = self.parse_primary()
 

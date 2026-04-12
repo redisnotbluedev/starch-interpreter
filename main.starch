@@ -1,5 +1,5 @@
-var x: int = 1;
-x.value;
-foo.bar();
-foo.bar.baz();
-x.y.z;
+function main(input: str or "hello world") -> void {
+	print(input);
+}
+
+element.onclick(() => { print("hello"); });
