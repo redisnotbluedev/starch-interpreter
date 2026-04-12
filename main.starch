@@ -6,4 +6,8 @@ match variable {
 	case "value2" {
 		doThingTwo();
 	}
+
+	case _ {
+		doFallback();
+	}
 }

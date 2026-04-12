@@ -402,7 +402,8 @@ class Parser:
 
 	def parse_match(self) -> MatchStatement:
 		token = self.advance()
-		variable = self.expect(TokenType.IDENT).value
+		identifier = self.expect(TokenType.IDENT)
+		variable = node(identifier, Identifier, identifier.value)
 		self.expect(TokenType.LBRACE)
 		cases = []
 		while self.current.type == TokenType.CASE:
