@@ -165,6 +165,30 @@ class Parser:
 	"""
 
 	def parse_expression(self) -> Node:
+		return self.parse_or()
+
+	def parse_or(self) -> Node:
+		token = self.current
+		if token.type == TokenType.OR:
+			self.advance()
+			return node(token, UnaryOp, TokenType.OR, self.parse_or())
+
+		return self.parse_and()
+
+	def parse_and(self) -> Node:
+		token = self.current
+		if token.type == TokenType.AND:
+			self.advance()
+			return node(token, UnaryOp, TokenType.AND, self.parse_and())
+
+		return self.parse_not()
+
+	def parse_not(self) -> Node:
+		token = self.current
+		if token.type == TokenType.NOT:
+			self.advance()
+			return node(token, UnaryOp, TokenType.NOT, self.parse_not())
+
 		return self.parse_comparison()
 
 	def parse_comparison(self) -> Node:
