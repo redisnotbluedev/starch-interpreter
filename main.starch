@@ -1,1 +1,1 @@
-((name: str or "John") => { print(name); })("Bob");
+helloWorld("print");

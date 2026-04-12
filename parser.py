@@ -76,6 +76,15 @@ class Return(Node):
 class Throw(Node):
 	exception: Node
 
+@dataclass(repr=False)
+class Using(Node):
+	modules: list[str]
+
+@dataclass(repr=False)
+class ImportFrom(Node):
+	module: str
+	names: list[str]
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -195,10 +204,30 @@ class Parser:
 			case TokenType.RETURN:
 				token = self.advance()
 				expression = None
-				if self.current != TokenType.SEMICOLON:
+				if self.current.type != TokenType.SEMICOLON:
 					expression = self.parse_expression()
 				self.terminate()
 				return node(token, Return, expression)
+			case TokenType.THROW:
+				token = self.advance()
+				expression = self.parse_expression()
+				self.terminate()
+				return node(token, Throw, expression)
+			case TokenType.USING:
+				token = self.advance()
+				names = [self.expect(TokenType.IDENT)]
+				while self.current.type == TokenType.COMMA:
+					self.advance()
+					names.append(self.expect(TokenType.IDENT))
+
+				if self.current.type == TokenType.FROM:
+					self.advance()
+					module = self.expect(TokenType.IDENT)
+					self.terminate()
+					return node(token, ImportFrom, module, names)
+
+				self.terminate()
+				return node(token, Using, names)
 			case _:
 				return self.parse_expression_statement()
 
