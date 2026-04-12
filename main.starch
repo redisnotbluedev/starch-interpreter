@@ -1,5 +1,1 @@
-function main(input: str or "hello world") -> void {
-	print(input);
-}
-
-element.onclick(() => { print("hello"); });
+x ^ y ^ z;

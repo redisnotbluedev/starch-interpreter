@@ -1,6 +1,7 @@
+from re import L
 from dataclasses import dataclass
 from lexer import Token, TokenType
-from errors import StarchError, StarchTypeError, StarchSyntaxError
+from errors import StarchError, StarchSyntaxError
 
 @dataclass
 class Program:
@@ -48,6 +49,17 @@ class MemberAccess(Node):
 @dataclass(repr=False)
 class ExpressionStatement(Node):
 	expression: Node
+
+@dataclass(repr=False)
+class UnaryOp(Node):
+	operator: str
+	operand: Node
+
+@dataclass(repr=False)
+class BinaryOp(Node):
+	operator: str
+	left: Node
+	right: Node
 
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
@@ -136,11 +148,41 @@ class Parser:
 		self.terminate()
 		return node(token, ExpressionStatement, expression)
 
+	"""
+	parse_expression        # entry point
+    parse_pipeline      # ~>  (lowest precedence)
+        parse_or        # or
+            parse_and   # and
+                parse_not       # not (unary)
+                    parse_comparison    # == != < > <= >= ≈
+                        parse_concat    # ~
+                            parse_range     # ..
+                                parse_additive      # + -
+                                    parse_multiplicative    # * / %
+                                        parse_exponent      # ^
+                                            parse_unary     # - (negative)
+                                                parse_call      # func() obj.member
+                                                    parse_primary   # literals, identifiers, (expr)
+	"""
+
 	def parse_expression(self):
-		return self.parse_call()
+		return self.parse_exponent()
+
+	def parse_exponent(self):
+		base = self.parse_unary()
+		if self.current.type == TokenType.CARET:
+			token = self.current
+			self.advance()
+			return node(token, BinaryOp, "^", base, self.parse_exponent())
+		return base
 
 	def parse_unary(self):
-		pass
+		token = self.current
+		if token.type == TokenType.MINUS:
+			self.advance()
+			return node(token, UnaryOp, "-", self.parse_unary())
+
+		return self.parse_call()
 
 	def parse_call(self):
 		expression = self.parse_primary()

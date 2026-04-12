@@ -18,6 +18,8 @@ if __name__ == "__main__":
 		tokens = lexer.lex()
 		print(tokens)
 
+		print()
+
 		parser = Parser(tokens, "main.starch")
 		tree = parser.parse()
 		print(tree)
