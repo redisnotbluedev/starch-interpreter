@@ -143,6 +143,13 @@ class MatchStatement(Node):
 	expression: Node
 	cases: list[MatchCase]
 
+@dataclass(repr=False)
+class TryStatement(Node):
+	body: list[Node]
+	catch_variable: str | None
+	catch_body: list[Node]
+	finally_body: list[Node]
+
 def node(token: Token, type: type[Node], *args, **kwargs):
 	return type(token.line, token.col, token.source_line, *args, **kwargs)
 
@@ -314,6 +321,8 @@ class Parser:
 				return self.parse_function()
 			case TokenType.MATCH:
 				return self.parse_match()
+			case TokenType.TRY:
+				return self.parse_try()
 			case _:
 				return self.parse_expression_statement()
 
@@ -416,6 +425,29 @@ class Parser:
 			cases.append(node(case, MatchCase, patterns, self.parse_block()))
 		self.expect(TokenType.RBRACE)
 		return node(token, MatchStatement, variable, cases)
+
+	def parse_try(self) -> TryStatement:
+		token = self.advance()
+		block = self.parse_block()
+		catch_variable = None
+		catch_block = []
+		finally_block = None
+
+		if self.current.type == TokenType.CATCH:
+			self.advance()
+			self.expect(TokenType.LPAREN)
+			catch_variable = self.expect(TokenType.IDENT).value
+			self.expect(TokenType.RPAREN)
+			catch_block = self.parse_block()
+
+		if self.current.type == TokenType.FINALLY:
+			self.advance()
+			finally_block = self.parse_block()
+
+		if not (catch_block or finally_block):
+			raise self.error(StarchSyntaxError, "expected 'catch' or 'finally' block")
+
+		return node(token, TryStatement, block, catch_variable, catch_block, finally_block)
 
 	def parse_expression_statement(self) -> ExpressionStatement:
 		token = self.current

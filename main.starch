@@ -1,13 +1,19 @@
-match variable {
-	case "value1" {
-		doThingOne();
-	}
+try {
+	doRiskyThing();
+} catch(e) {
+	print("Error: " ~ e);
+}
 
-	case "value2" {
-		doThingTwo();
-	}
+try {
+	doRiskyThing();
+} finally {
+	print("Done!");
+}
 
-	case _ {
-		doFallback();
-	}
+try {
+	doRiskyThing();
+} catch(e) {
+	print("Error: " ~ e);
+} finally {
+	cleanUp();
 }
