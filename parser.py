@@ -109,6 +109,14 @@ class Parser:
 			return True
 		return False
 
+	def parse_args(self) -> list[Node]:
+		args = []
+		while self.current.type != TokenType.RPAREN:
+			args.append(self.parse_expression())
+			if self.current.type == TokenType.COMMA:
+				self.advance()
+		return args
+
 	def parse(self) -> Program:
 		statements = []
 
@@ -165,7 +173,40 @@ class Parser:
 	"""
 
 	def parse_expression(self) -> Node:
-		return self.parse_or()
+		return self.parse_pipeline()
+
+	def parse_pipeline(self) -> Node:
+		left = self.parse_or()
+
+		while self.current.type == TokenType.PIPELINE:
+			token = self.current
+			self.advance()
+
+			if self.current.type == TokenType.DOT:
+				# x ~> .method(args)
+				self.advance()
+				member = self.expect(TokenType.IDENT)
+
+				if self.current.type == TokenType.LPAREN:
+					self.advance()
+					args = self.parse_args()
+					self.expect(TokenType.RPAREN)
+					left = node(token, FunctionCall, node(member, MemberAccess, left, member.value), args)
+				else:
+					left = node(token, MemberAccess, left, member.value)
+
+			else:
+				# x ~> method(args)
+				callee = self.expect(TokenType.IDENT)
+				args = []
+				if self.current.type == TokenType.LPAREN:
+					self.advance()
+					args = self.parse_args()
+					self.expect(TokenType.RPAREN)
+				args.insert(0, left)
+				left = node(token, FunctionCall, node(callee, Identifier, callee.value), args)
+
+		return left
 
 	def parse_or(self) -> Node:
 		left = self.parse_and()
@@ -277,12 +318,7 @@ class Parser:
 			match token.type:
 				case TokenType.LPAREN:
 					self.advance()
-					args = []
-					while self.current.type != TokenType.RPAREN:
-						args.append(self.parse_expression())
-						if self.current.type == TokenType.COMMA:
-							self.advance()
-
+					args = self.parse_args()
 					self.expect(TokenType.RPAREN)
 					expression = node(token, FunctionCall, expression, args)
 				case TokenType.DOT:
