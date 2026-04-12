@@ -165,7 +165,18 @@ class Parser:
 	"""
 
 	def parse_expression(self) -> Node:
-		return self.parse_range()
+		return self.parse_concat()
+
+	def parse_concat(self) -> Node:
+		left = self.parse_range()
+
+		while self.current.type == TokenType.CONCAT:
+			token = self.current
+			self.advance()
+			right = self.parse_range()
+			left = node(token, BinaryOp, "~", left, right)
+
+		return left
 
 	def parse_range(self) -> Node:
 		left = self.parse_additive()
