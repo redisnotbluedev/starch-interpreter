@@ -168,20 +168,26 @@ class Parser:
 		return self.parse_or()
 
 	def parse_or(self) -> Node:
-		token = self.current
-		if token.type == TokenType.OR:
-			self.advance()
-			return node(token, UnaryOp, TokenType.OR, self.parse_or())
+		left = self.parse_and()
 
-		return self.parse_and()
+		while self.current.type == TokenType.OR:
+			token = self.current
+			self.advance()
+			right = self.parse_and()
+			left = node(token, BinaryOp, TokenType.OR, left, right)
+
+		return left
 
 	def parse_and(self) -> Node:
-		token = self.current
-		if token.type == TokenType.AND:
-			self.advance()
-			return node(token, UnaryOp, TokenType.AND, self.parse_and())
+		left = self.parse_not()
 
-		return self.parse_not()
+		while self.current.type == TokenType.AND:
+			token = self.current
+			self.advance()
+			right = self.parse_not()
+			left = node(token, BinaryOp, TokenType.AND, left, right)
+
+		return left
 
 	def parse_not(self) -> Node:
 		token = self.current
@@ -288,13 +294,7 @@ class Parser:
 	def parse_primary(self) -> Node:
 		token = self.current
 		match token.type:
-			case TokenType.NUMBER:
-				return node(self.advance(), Literal, token.value)
-			case TokenType.FLOAT:
-				return node(self.advance(), Literal, token.value)
-			case TokenType.STRING:
-				return node(self.advance(), Literal, token.value)
-			case TokenType.BOOL:
+			case TokenType.NUMBER | TokenType.FLOAT | TokenType.STRING | TokenType.BOOL:
 				return node(self.advance(), Literal, token.value)
 			case TokenType.IDENT:
 				return node(self.advance(), Identifier, token.value)
