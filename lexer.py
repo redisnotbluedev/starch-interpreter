@@ -38,8 +38,8 @@ class TokenType(StrEnum):
 	# Comparison
 	EQ = "'=='"
 	NEQ = "'!='"
-	LT = "'>'"
-	GT = "'<'"
+	LT = "'<'"
+	GT = "'>'"
 	LTE = "'<='"
 	GTE = "'>='"
 	APPROX = "'≈'"
@@ -230,13 +230,13 @@ class Lexer:
 								self.advance()
 							else:
 								type = TokenType.ASSIGN
-						case "<":
+						case ">":
 							if self.peek() == "=":
 								type = TokenType.GTE
 								self.advance()
 							else:
 								type = TokenType.GT
-						case ">":
+						case "<":
 							if self.peek() == "=":
 								type = TokenType.LTE
 								self.advance()

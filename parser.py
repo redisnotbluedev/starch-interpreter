@@ -56,7 +56,7 @@ class UnaryOp(Node):
 
 @dataclass(repr=False)
 class BinaryOp(Node):
-	operator: str
+	operator: TokenType
 	left: Node
 	right: Node
 
@@ -165,7 +165,18 @@ class Parser:
 	"""
 
 	def parse_expression(self) -> Node:
-		return self.parse_concat()
+		return self.parse_comparison()
+
+	def parse_comparison(self) -> Node:
+		left = self.parse_concat()
+
+		while self.current.type in (TokenType.EQ, TokenType.NEQ, TokenType.GT, TokenType.GTE, TokenType.LT, TokenType.LTE, TokenType.APPROX):
+			token = self.current
+			operator = self.advance().type
+			right = self.parse_concat()
+			left = node(token, BinaryOp, operator, left, right)
+
+		return left
 
 	def parse_concat(self) -> Node:
 		left = self.parse_range()
@@ -174,7 +185,7 @@ class Parser:
 			token = self.current
 			self.advance()
 			right = self.parse_range()
-			left = node(token, BinaryOp, "~", left, right)
+			left = node(token, BinaryOp, TokenType.CONCAT, left, right)
 
 		return left
 
@@ -185,7 +196,7 @@ class Parser:
 			token = self.current
 			self.advance()
 			right = self.parse_additive()
-			left = node(token, BinaryOp, "..", left, right)
+			left = node(token, BinaryOp, TokenType.RANGE, left, right)
 
 		return left
 
@@ -194,7 +205,7 @@ class Parser:
 
 		while self.current.type in (TokenType.PLUS, TokenType.MINUS):
 			token = self.current
-			operator = {TokenType.PLUS: "+", TokenType.MINUS: "-"}[self.advance().type]
+			operator = self.advance().type
 			right = self.parse_multiplicative()
 			left = node(token, BinaryOp, operator, left, right)
 
@@ -205,7 +216,7 @@ class Parser:
 
 		while self.current.type in (TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
 			token = self.current
-			operator = {TokenType.STAR: "*", TokenType.SLASH: "/", TokenType.PERCENT: "%"}[self.advance().type]
+			operator = self.advance().type
 			right = self.parse_exponent()
 			left = node(token, BinaryOp, operator, left, right)
 
@@ -216,14 +227,14 @@ class Parser:
 		if self.current.type == TokenType.CARET:
 			token = self.current
 			self.advance()
-			return node(token, BinaryOp, "^", base, self.parse_exponent())
+			return node(token, BinaryOp, TokenType.CARET, base, self.parse_exponent())
 		return base
 
 	def parse_unary(self) -> Node:
 		token = self.current
 		if token.type == TokenType.MINUS:
 			self.advance()
-			return node(token, UnaryOp, "-", self.parse_unary())
+			return node(token, UnaryOp, TokenType.MINUS, self.parse_unary())
 
 		return self.parse_call()
 
