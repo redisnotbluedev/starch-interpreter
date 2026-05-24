@@ -1,8 +1,12 @@
-import errors
+from errors import StarchError, newStarchError
+from std/os import paramStr, paramCount
 
 proc main(): void =
-     echo "STARCH is not actually implemented in Nim yet..."
-     raise newStarchError(StarchSyntaxError, "Unexpected token", line=10, context="print(@@@)", col=7)
+    if paramCount() < 1:
+        echo "Usage: starch <filename>"
+        quit(1)
+
+    let content = paramStr(1).readFile()
 
 when isMainModule:
     try:

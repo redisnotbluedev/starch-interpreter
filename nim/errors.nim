@@ -1,6 +1,5 @@
-import std/strformat
-import std/strutils
-import std/terminal
+from std/strutils import replace
+from std/terminal import ansiForegroundColorCode, ansiResetCode, ansiStyleCode, fgRed, styleBright
 
 # Errors
 type StarchError* = ref object of CatchableError
@@ -30,6 +29,6 @@ proc newStarchError*(kind: typedesc[StarchError], msg: string, line: int = 0, co
 
     # Strip "Starch" from error name
     let typeName = ($kind).replace("Starch", "").replace("ref ", "")
-    text.add(&"\n{bold(red(typeName))}: {red(msg)}")
+    text.add("\n" & bold(red(typeName)) & red(msg))
 
     result = kind(msg: text, line: line, context: context, col: col, file: file)
