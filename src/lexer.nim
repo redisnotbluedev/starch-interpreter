@@ -28,7 +28,7 @@ proc `$`*(v: TokenValue): string =
         of ValueKind.bool:   $v.boolVal
         else: "none"
 proc `$`*(t: Token): string =
-    &"Token(type='{t.kind}', value='{$t.value}')"
+    &"Token(type='{t.kind}', value='{t.value}')"
 
 # Shorthands for constructing values
 proc toValue*(v: string): TokenValue = TokenValue(kind: ValueKind.string, strVal: v)
@@ -75,7 +75,6 @@ proc advance(self: Lexer): Rune {.inline.} =
 
     if result == Rune('\n'):
         self.line.inc()
-        echo "rewrapping to 1 col"
         self.col = 1
     else:
         self.col.inc()
@@ -94,7 +93,7 @@ proc error(self: Lexer, kind: typedesc[StarchError], message: string): StarchErr
         context = self.get_line(),
         line = self.line,
         col = self.startCol,
-        length = self.col,
+        length = max(self.col - self.startCol, 1),
         file = self.filename
     )
 
