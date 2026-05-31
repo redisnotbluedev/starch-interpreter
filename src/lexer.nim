@@ -2,33 +2,8 @@ from errors import StarchSyntaxError, StarchError, newStarchError
 from std/strformat import `&`
 from std/strutils import splitLines, contains, parseHexInt, parseOctInt, parseBinInt, parseFloat, parseInt
 from std/unicode import Rune, runeAt, toRunes, `==`, `$`, add, toLower
-from tokens import TokenType
+from tokens import TokenType, ValueKind, Token, `$`
 from unicode_tables import isXIDStart, isXIDContinue
-
-type ValueKind* {.pure.} = enum none, string, int, float, bool
-type TokenValue* = object
-    ## The value of a token. Can be any ValueType.
-    case kind*: ValueKind
-    of ValueKind.string: strVal*: string
-    of ValueKind.int:    intVal*: int
-    of ValueKind.float:  floatVal*: float
-    of ValueKind.bool:   boolVal*: bool
-    of ValueKind.none:   discard
-type Token* = object
-    ## A single lexical unit produced by the lexer.
-    ## Bundles a TokenType with positional data and a TokenValue.
-    kind*: TokenType
-    value*: TokenValue
-    line*, col*, length*: int
-proc `$`*(v: TokenValue): string =
-    result = case v.kind:
-        of ValueKind.string:  v.strVal
-        of ValueKind.int:    $v.intVal
-        of ValueKind.float:  $v.floatVal
-        of ValueKind.bool:   $v.boolVal
-        else: "none"
-proc `$`*(t: Token): string =
-    &"Token(type='{t.kind}', value='{t.value}')"
 
 # Shorthands for constructing values
 proc toValue*(v: string): TokenValue = TokenValue(kind: ValueKind.string, strVal: v)
