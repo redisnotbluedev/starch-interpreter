@@ -1,10 +1,10 @@
-from errors import StarchError, newStarchError
-from lexer import newLexer, lex
-from tokens import `$`
-from std/os import paramStr, paramCount
-from std/monotimes import getMonoTime, `-`
-from std/times import inNanoseconds
-from std/strformat import `&`
+import errors
+import lexer
+import tokens
+import std/os
+import std/monotimes
+import std/times
+import std/strformat
 
 proc main(): void =
     if paramCount() < 1:

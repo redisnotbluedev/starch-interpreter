@@ -1,6 +1,6 @@
-from std/os import existsEnv
-from std/strutils import replace, repeat
-from std/terminal import ansiForegroundColorCode, ansiResetCode, ansiStyleCode, fgRed, styleBright, isatty
+import std/os
+import std/strutils
+import std/terminal
 
 # Errors
 type StarchError* = ref object of CatchableError
@@ -28,10 +28,10 @@ proc newStarchError*(kind: typedesc[StarchError], msg: string, context: string =
         text.add("\n    " & cleanContext)
         if col > 0:
             let spaces: string = " ".repeat(cleanContext[0 ..< col - 1].len)
-            text.add("\n    " & spaces & red("^".repeat(length)))
+            text.add("\n    " & spaces & red("~".repeat(length)))
 
     # Strip "Starch" from error name
     let typeName = ($kind).replace("Starch", "").replace("ref ", "")
     text.add("\n" & bold(red(typeName)) & ": " & red(msg))
 
-    result = kind(msg: text, context: context, line: line, col: col, length: length, file: file)
+    result = kind(msg: text, context: context, col: col, length: length, file: file)

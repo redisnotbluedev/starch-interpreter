@@ -1,5 +1,5 @@
-from std/strformat import `&`
-from std/enumutils import symbolName
+import std/strformat
+import std/enumutils
 
 type TokenType* {.pure.} = enum
     ## The type of a token.

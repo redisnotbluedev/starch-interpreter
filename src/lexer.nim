@@ -1,9 +1,9 @@
-from errors import StarchSyntaxError, StarchError, newStarchError
-from std/strformat import `&`
-from std/strutils import splitLines, contains, parseHexInt, parseOctInt, parseBinInt, parseFloat, parseInt
-from std/unicode import Rune, runeAt, toRunes, `==`, `$`, add, toLower
-from tokens import TokenType, ValueKind, Token, `$`, TokenValue
-from unicode_tables import isXIDStart, isXIDContinue
+import errors
+import std/strformat
+import std/strutils
+import std/unicode
+import tokens
+import unicode_tables
 
 # Shorthands for constructing values
 proc toValue*(v: string): TokenValue = TokenValue(kind: ValueKind.string, strVal: v)
