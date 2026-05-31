@@ -1,7 +1,13 @@
+from std/strformat import `&`
+from std/enumutils import symbolName
+
 type TokenType* {.pure.} = enum
     ## The type of a token.
     # Literals
     number, float, string, bool,
+    templateStart = "template string",
+    templateMiddle = "template string",
+    templateEnd = "template string",
     # Definitions
     `var` = "'var'", `const` = "'const'", function = "'function'",
     `derive` = "'derive'", `class` = "'class'",
@@ -34,8 +40,9 @@ type TokenType* {.pure.} = enum
     plusAssign = "'+='", minusAssign = "'-='",
     starAssign = "'*='", slashAssign = "'/='",
     # Misc
-    `return` = "'return'", ident = "identifier",
-    watch = "'watch'", eof = "end of file"
+    `return` = "'return'", ident = "identifier", watch = "'watch'"
+    # Special
+    comment = "comment", eof = "end of file"
 
 type ValueKind* {.pure.} = enum none, string, int, float, bool
 type TokenValue* = object
@@ -54,10 +61,10 @@ type Token* = object
     line*, col*, length*: int
 proc `$`*(v: TokenValue): string =
     result = case v.kind:
-        of ValueKind.string:  v.strVal
+        of ValueKind.string: &"'{v.strVal}'"
         of ValueKind.int:    $v.intVal
         of ValueKind.float:  $v.floatVal
         of ValueKind.bool:   $v.boolVal
         else: "none"
 proc `$`*(t: Token): string =
-    &"Token(type='{t.kind}', value='{t.value}')"
+    &"Token(type={symbolName(t.kind)}, value={t.value})"

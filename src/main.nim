@@ -1,5 +1,6 @@
 from errors import StarchError, newStarchError
-from lexer import newLexer, lex, `$`
+from lexer import newLexer, lex
+from tokens import `$`
 from std/os import paramStr, paramCount
 from std/monotimes import getMonoTime, `-`
 from std/times import inNanoseconds

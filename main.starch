@@ -1,1 +1,7 @@
-0b10101
+`hello world`
+`hello
+ world`
+`hello ${name}`
+`hello
+ ${name}`
+`hello ${name}, ${question}?`
