@@ -10,7 +10,7 @@ suite "Lexing: Numbers":
         assertTokens("42",        [(TokenType.number, "42", 0, 2)])
     test "Float":
         assertTokens("3.14159",   [(TokenType.float,  "3.14159", 0, 7)])
-    test "Seperators":
+    test "Separators":
         assertTokens("1_000_000", [(TokenType.number, "1_000_000", 0, 9)])
     test "Binary":
         assertTokens("0b1001001", [(TokenType.number, "0b1001001", 0, 9)])
