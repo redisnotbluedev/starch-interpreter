@@ -22,6 +22,10 @@ suite "Lexing: Numbers":
         assertTokens("1e6",       [(TokenType.float,  "1e6", 1, 1, 3)])
     test "Scientific notation (signed)":
         assertTokens("1e-4",      [(TokenType.float,  "1e-4", 1, 1, 4)])
+    test "Leading decimals":
+        assertTokens(".5",        [(TokenType.float,  ".5", 1, 1, 2)])
+    test "Trailing decimals":
+        assertTokens("5.",        [(TokenType.float,  "5.", 1, 1, 2)])
     test "Invalid binary":
         assertError("0b",         StarchSyntaxError,  "invalid binary literal", 1, 1, 2)
     test "Invalid hex":

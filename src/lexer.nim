@@ -294,7 +294,7 @@ proc readNumber(self: Lexer): Token =
     while self.peek().isAsciiIn({'0'..'9', '_'}):
         num.add(self.advance())
 
-    if self.peek() == u"." and self.peek(1).isAsciiIn({'0'..'9', '_'}):
+    if self.peek() == u"." and self.peek(1) != u".":
         # Float literal
         isFloat = true
         num.add(self.advance())
@@ -434,42 +434,55 @@ proc readToken(self: Lexer): Token =
 
                 # 2 character tokens
                 if kind == TokenType.eof:
-                    case self.advance():
+                    case char:
                         of u"!":
-                            if self.peek() == u"=":
+                            if self.peek(1) == u"=":
                                 kind = TokenType.neq
                                 discard self.advance()
+                                discard self.advance()
                             else:
+                                discard self.advance()
                                 kind = TokenType.bang
                         of u"=":
-                            if self.peek() == u"=":
+                            if self.peek(1) == u"=":
                                 kind = TokenType.eq
                                 discard self.advance()
-                            elif self.peek() == u">":
+                                discard self.advance()
+                            elif self.peek(1) == u">":
                                 kind = TokenType.fatArrow
                                 discard self.advance()
+                                discard self.advance()
                             else:
+                                discard self.advance()
                                 kind = TokenType.assign
                         of u">":
-                            if self.peek() == u"=":
-                                kind = TokenType.gte
+                            if self.peek(1) == u"=":
                                 discard self.advance()
+                                discard self.advance()
+                                kind = TokenType.gte
                             else:
+                                discard self.advance()
                                 kind = TokenType.gt
                         of u"<":
-                            if self.peek() == u"=":
-                                kind = TokenType.lte
+                            if self.peek(1) == u"=":
                                 discard self.advance()
+                                discard self.advance()
+                                kind = TokenType.lte
                             else:
+                                discard self.advance()
                                 kind = TokenType.lt
                         of u".":
-                            if self.peek() == u".":
-                                kind = TokenType.range
+                            if self.peek(1) == u".":
                                 discard self.advance()
+                                discard self.advance()
+                                kind = TokenType.range
+                            elif isAsciiIn(self.peek(1), {'0'..'9'}):
+                                return self.readNumber() # this is kinda messy but oh well
                             else:
+                                discard self.advance()
                                 kind = TokenType.dot
                         else:
-                            discard # I have no idea why but there's NO HANDLING in the original Python code...
+                            discard self.advance()
                 else:
                     discard self.advance()
 

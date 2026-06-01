@@ -14,3 +14,7 @@ suite "Lexing: Identifiers":
         assertTokens("你好",     [(TokenType.ident,  "你好", 1, 1, 2)])
     test "XID_Nonstart":
         assertError("٢_items",   StarchSyntaxError, "unexpected character '٢'", 1, 1, 1)
+    test "With number":
+        assertTokens("day99",    [(TokenType.ident,  "day99", 1, 1, 5)])
+    test "With keyword":
+        assertTokens("if_value", [(TokenType.ident,  "if_value", 1, 1, 8)])
