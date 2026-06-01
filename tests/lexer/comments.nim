@@ -7,8 +7,8 @@ import ../../src/tokens
 
 suite "Lexing: Comments":
     test "Line comment":
-        assertTokens("//single",        [(TokenType.comment, "single", 1, 1, 8)])
+        assertTokens("//single",        [(TokenType.comment, "single", 0, 8)])
     test "Block comment":
-        assertTokens("/*multi\nline*/", [(TokenType.comment, "multi\nline", 1, 1, 14)])
+        assertTokens("/*multi\nline*/", [(TokenType.comment, "multi\nline", 0, 14)])
     test "Unterminated block comment":
-        assertError("/* doesn't end",   StarchSyntaxError,   "unterminated block comment", 1, 1, 2)
+        assertError("/* doesn't end",   StarchSyntaxError,   "unterminated block comment", 1, 1, 14)

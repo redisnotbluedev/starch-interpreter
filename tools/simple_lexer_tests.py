@@ -58,7 +58,7 @@ longest_key = len(max(tokens, key=lambda t: len(t[0]))[0])
 longest_value = len(max(tokens, key=lambda t: len(t[1]))[1])
 
 for key, value, pattern in tokens:
-	text += f"""\n    test "{value} token":\n        assertTokens("{pattern}", {" " * (longest_value - len(value))}[(TokenType.{key}, {" " * (longest_key - len(key))}noValue, 1, 1, {len(pattern)})])"""
+	text += f"""\n    test "{value} token":\n        assertTokens("{pattern}", {" " * (longest_value - len(value))}[(TokenType.{key}, {" " * (longest_key - len(key))}noValue, 0, {len(pattern)})])"""
 
 # Assumes simple_lexer_tests.py is in a tools/ directory (or similar) relative to the project root.
 with open(pathlib.Path(__file__).parent.parent / "tests" / "lexer" / "static_tokens.nim", "w") as f:

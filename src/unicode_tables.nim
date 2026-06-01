@@ -1,4 +1,5 @@
 import std/unicode
+import std/algorithm
 
 const XID_Start_Ranges = [
     (0x0041, 0x005A),
@@ -2206,21 +2207,24 @@ const XID_Continue_Ranges = [
     (0xE0100, 0xE01EF),
 ]
 
-proc binarySearch(ranges: openArray[(int, int)], target: int): bool =
-    var left = 0
-    var right = ranges.len - 1
-    while left <= right:
-        let mid = (left + right) div 2
-        if target < ranges[mid][0]:
-            right = mid - 1
-        elif target > ranges[mid][1]:
-            left = mid + 1
-        else:
-            return true
-    false
+proc cmpRange(rangeTuple: (int, int), key: int): int =
+    ## Returns > 0 if key is below the range, < 0 if above, and 0 if inside.
+    if key < rangeTuple[0]:
+        # The target key is smaller than the lowest value in this range.
+        return 1
+    elif key > rangeTuple[1]:
+        # The target key is larger than the highest value in this range.
+        return -1
+    else:
+        # The key matches/falls within this range block.
+        return 0
 
+# std/algorithm.binarySearch returns the index if found, or -1 if not found.
+# Uses binary search to check if it's there as fast as possible.
 proc isXIDStart*(r: Rune): bool =
-    binarySearch(XID_Start_Ranges, r.int)
+    let idx = XID_Start_Ranges.binarySearch(r.int, cmpRange)
+    return idx >= 0
 
 proc isXIDContinue*(r: Rune): bool =
-    binarySearch(XID_Continue_Ranges, r.int)
+    let idx = XID_Continue_Ranges.binarySearch(r.int, cmpRange)
+    return idx >= 0

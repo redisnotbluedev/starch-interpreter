@@ -7,15 +7,15 @@ import ../../src/tokens
 
 suite "Lexing: Strings":
     test "Basic string":
-        assertTokens(""""hello world"""",  [(TokenType.string, "hello world", 1, 1, 13)])
+        assertTokens(""""hello world"""",  [(TokenType.string, "hello world", 0, 13)])
     test "Smart quotes":
-        assertTokens("“hello world”",      [(TokenType.string, "hello world", 1, 1, 13)])
+        assertTokens("“hello world”",      [(TokenType.string, "hello world", 0, 13)])
     test "Escaped newline":
-        assertTokens(""""hello\nworld"""", [(TokenType.string, "hello\nworld", 1, 1, 14)])
+        assertTokens(""""hello\nworld"""", [(TokenType.string, "hello\nworld", 0, 14)])
     test "Escaped tab":
-        assertTokens(""""hello\tworld"""", [(TokenType.string, "hello\tworld", 1, 1, 14)])
+        assertTokens(""""hello\tworld"""", [(TokenType.string, "hello\tworld", 0, 14)])
     test "Escaped backslash":
-        assertTokens(""""hello\\world"""", [(TokenType.string, "hello\\world", 1, 1, 14)])
+        assertTokens(""""hello\\world"""", [(TokenType.string, "hello\\world", 0, 14)])
     test "Invalid escape sequence":
         assertError(""""hello\bworld"""",  StarchSyntaxError, "invalid escape sequence '\\b'", 1, 7, 2)
     test "Unterminated string":

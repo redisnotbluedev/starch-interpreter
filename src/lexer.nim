@@ -1,4 +1,5 @@
 import errors
+import std/algorithm
 import std/strformat
 import std/strutils
 import std/unicode
@@ -12,25 +13,36 @@ proc isAsciiIn(r: Rune, s: set[char]): bool {.inline.} =
     let i = r.int
     return i >= 0 and i < 128 and char(i) in s
 
+type LineIndex* = object
+    ## A list of character offsets where each line starts.
+    lineStarts*: seq[int]
+
 type Lexer* = ref object
     ## A STARCH lexer. Processes raw STARCH code and outputs a sequence of Tokens.
     code*: seq[Rune]
     filename*: string
-    pos*, line*, col*, startCol*, startPos*, startLine*: int
+    pos*, startPos*: int
     tokens*: seq[Token]
+    lines*: LineIndex
 
 proc newLexer*(code: string, filename: string = "<starch-input>"): Lexer =
     ## Creates a Lexer with default values.
     let runes: seq[Rune] = code.toRunes()
+    var starts = newSeqOfCap[int](code.len div 40) # Allocate memory upfront to prevent slow resizing
+    starts.add(0)
+
+    for i in 0 ..< code.len:
+        if code[i] == '\n':
+            # The next line starts exactly 1 byte after the newline character
+            starts.add(i + 1)
+
     result = Lexer(
         code: runes,
         filename: filename,
         pos: 0,
-        line: 1,
-        col: 1,
-        startCol: 1,
-        startLine: 1,
-        tokens: @[]
+        startPos: 0,
+        tokens: @[],
+        lines: LineIndex(lineStarts: starts)
     )
 
 proc peek(self: Lexer, offset: int = 0): Rune {.inline.} =
@@ -44,26 +56,24 @@ proc advance(self: Lexer): Rune {.inline.} =
     result = self.code[self.pos]
     self.pos.inc()
 
-    if result == Rune('\n'):
-        self.line.inc()
-        self.col = 1
-    else:
-        self.col.inc()
-
-proc getLine(self: Lexer): string {.inline.} =
+proc lookupPos(self: Lexer, pos: int): tuple[line: int, col: int, content: string] {.inline.} =
     ## Get the text content of the current line.
-    let lines = ($self.code).splitLines()
-    if self.line <= lines.len:
-        return lines[self.line - 1] # line is 1-indexed
+    # Find the first line index greater than pos, then step back
+    let line = self.lines.lineStarts.upperBound(pos) - 1
+    let col = (pos - self.lines.lineStarts[line]) + 1 # 1-indexed column
+    let ctx = ($self.code).splitLines()[line]
+
+    return (line: line + 1, col: col, content: ctx)
 
 proc error(self: Lexer, kind: typedesc[StarchError], message: string): StarchError {.inline.} =
     ## Create an error. Automatically fills with position data.
+    let metadata = self.lookupPos(self.startPos)
     return newStarchError(
         kind = kind,
         msg = message,
-        context = self.get_line(),
-        line = self.startLine,
-        col = self.startCol,
+        context = metadata.content,
+        line = metadata.line,
+        col = metadata.col,
         length = self.pos - self.startPos,
         file = self.filename
     )
@@ -73,8 +83,7 @@ proc token(self: Lexer, kind: TokenType, value: TokenValue = noValue): Token {.i
     return Token(
         kind: kind,
         value: value,
-        line: self.line,
-        col: self.startCol,
+        pos: self.startPos,
         length: self.pos - self.startPos
     )
 
@@ -87,6 +96,7 @@ proc skipWhitespace(self: Lexer): void =
         elif self.peek() == u"/":
             if self.peek(1) == u"/":
                 # Starts with "//"
+                self.startPos = self.pos # skipWhitespace skips through multiple tokens, so resetting here is most predictable.
                 var comment = ""
                 discard self.advance()
                 discard self.advance()
@@ -96,11 +106,7 @@ proc skipWhitespace(self: Lexer): void =
                 self.tokens.add(self.token(TokenType.comment, comment))
             elif self.peek(1) == u"*":
                 # Starts with /*
-                let startCol = self.col
-                let startPos = self.pos
-                let startLine = self.line
-                let startCtx = self.get_line()
-
+                self.startPos = self.pos # skipWhitespace skips through multiple tokens, so resetting here is most predictable.
                 discard self.advance()
                 discard self.advance()
 
@@ -115,14 +121,8 @@ proc skipWhitespace(self: Lexer): void =
                         break
                     comment.add(self.advance())
                 if not finished:
-                    raise newStarchError(StarchSyntaxError, "unterminated block comment", startCtx, startLine, startCol, 2, self.filename)
-                self.tokens.add(Token(
-                    kind: TokenType.comment,
-                    value: comment,
-                    line: startLine,
-                    col: startCol,
-                    length: self.pos - startPos
-                ))
+                    raise self.error(StarchSyntaxError, "unterminated block comment")
+                self.tokens.add(self.token(TokenType.comment, toValue(comment)))
             else:
                 break
         else:
@@ -154,7 +154,6 @@ proc readString(self: Lexer): Token =
                     else:
                         # Override the token boundaries to only highlight from here onwards
                         self.startPos = self.pos - 1
-                        self.startCol = self.col - 1
                         # Consume the invalid character (instead of peeking) so it's highlighted
                         raise self.error(StarchSyntaxError, &"invalid escape sequence '\\{self.advance()}'")
                         # What's that? You think this is a hacky solution?
@@ -181,15 +180,10 @@ proc readToken(self: Lexer): Token
 
 proc readTemplate(self: Lexer): Token =
     ## Read a template string — these allow multiple lines and interpolation with ${}, but no escape sequences.
-    let startLine = self.line
-    let startCol = self.col
-    let startCtx = self.get_line()
-    let initialStartPos = self.pos
-
+    self.startPos = self.pos
     var text = ""
     var finished = false
     var kind = TokenType.templateStart
-    var currentStartPos = initialStartPos
 
     discard self.advance() # Eat the starting backtick
 
@@ -198,35 +192,27 @@ proc readTemplate(self: Lexer): Token =
             discard self.advance()
             discard self.advance()
 
-            self.tokens.add(Token(
-                kind: kind,
-                value: text,
-                line: startLine,
-                col: startCol,
-                length: self.pos - currentStartPos
-            ))
+            self.tokens.add(self.token(kind, text))
             text = ""
-            currentStartPos = self.pos
+            self.startPos = self.pos
             kind = TokenType.templateMiddle
 
             var depth = 0 # Track brace depth — when this reaches -1, we've finished the interpolation
             while self.pos < self.code.len:
                 # Exactly the same as the Lexer.lex() loop
-                self.startCol = self.col
                 self.startPos = self.pos
                 self.skipWhitespace()
 
                 if self.pos >= self.code.len:
                     break
 
-                self.startCol = self.col
                 self.startPos = self.pos
                 let token = self.readToken()
                 case token.kind:
                     of TokenType.lBrace: # {
-                        depth += 1
+                        depth.inc()
                     of TokenType.rBrace: # }
-                        depth -= 1
+                        depth.dec()
                     else: discard
 
                 if depth >= 0:
@@ -235,7 +221,7 @@ proc readTemplate(self: Lexer): Token =
                     break
 
             if depth >= 0:
-                raise newStarchError(StarchSyntaxError, "EOF while scanning template interpolation", startCtx, startLine, self.startCol, 1, self.filename)
+                raise self.error(StarchSyntaxError, "EOF while scanning template interpolation")
 
         elif self.peek() == u"`":
             discard self.advance()
@@ -245,15 +231,9 @@ proc readTemplate(self: Lexer): Token =
             text.add(self.advance())
 
     if not finished:
-        raise newStarchError(StarchSyntaxError, "unterminated template literal", startCtx, startLine, startCol, 1, self.filename)
+        raise self.error(StarchSyntaxError, "unterminated template literal")
 
-    return Token(
-        kind: TokenType.templateEnd,
-        value: text,
-        line: startLine,
-        col: startCol,
-        length: self.pos - initialStartPos
-    )
+    return self.token(TokenType.templateEnd, text)
 
 proc readNumber(self: Lexer): Token =
     ## Consume a number, while computing syntax such as 0x[...]), and return the resulting token.
@@ -500,22 +480,14 @@ proc readToken(self: Lexer): Token =
 proc lex*(self: Lexer): seq[Token] =
     ## Scans the source code and returns a sequence of Tokens.
     while self.pos < self.code.len:
-        self.startCol = self.col
         self.startPos = self.pos
-        self.startLine = self.line
         self.skipWhitespace()
 
         if self.pos >= self.code.len:
             break
 
-        self.startCol = self.col
         self.startPos = self.pos
-        self.startLine = self.line
         self.tokens.add(self.readToken())
 
-    self.tokens.add(Token(
-        kind: TokenType.eof,
-        value: noValue,
-        line: self.line
-    ))
+    self.tokens.add(self.token(TokenType.eof, noValue))
     return self.tokens

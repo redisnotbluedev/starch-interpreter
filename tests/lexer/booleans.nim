@@ -6,6 +6,6 @@ import ../../src/tokens
 
 suite "Lexing: Booleans":
     test "True":
-        assertTokens("true",  [(TokenType.bool, true, 1, 1, 4)])
+        assertTokens("true",  [(TokenType.bool, true, 0, 4)])
     test "False":
-        assertTokens("false", [(TokenType.bool, false, 1, 1, 5)])
+        assertTokens("false", [(TokenType.bool, false, 0, 5)])

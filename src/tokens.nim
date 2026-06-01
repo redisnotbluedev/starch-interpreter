@@ -5,9 +5,9 @@ type TokenType* {.pure.} = enum
     ## The type of a token.
     # Literals
     number, float, string, bool,
-    templateStart = "template string start",
-    templateMiddle = "template string middle",
-    templateEnd = "template string end",
+    templateStart = "template string (start)",
+    templateMiddle = "template string (middle)",
+    templateEnd = "template string (end)",
     # Definitions
     `var` = "'var'", `const` = "'const'", function = "'function'",
     `derive` = "'derive'", `class` = "'class'",
@@ -62,7 +62,7 @@ type Token* = object
     ## Bundles a TokenType with positional data and a TokenValue.
     kind*: TokenType
     value*: TokenValue
-    line*, col*, length*: int
+    pos*, length*: int
 
 proc `$`*(v: TokenValue): string =
     result = case v.kind:
@@ -79,11 +79,11 @@ proc `==`*(a, b: TokenValue): bool =
     ## Explicitly compare two TokenValue variants without using auto-generated reflection.
     if a.kind != b.kind: return false
     case a.kind:
-    of ValueKind.string: return a.strVal == b.strVal
-    of ValueKind.int:    return a.intVal == b.intVal
-    of ValueKind.float:  return a.floatVal == b.floatVal
-    of ValueKind.bool:   return a.boolVal == b.boolVal
-    of ValueKind.none:   return true
+        of ValueKind.string: return a.strVal == b.strVal
+        of ValueKind.int:    return a.intVal == b.intVal
+        of ValueKind.float:  return a.floatVal == b.floatVal
+        of ValueKind.bool:   return a.boolVal == b.boolVal
+        of ValueKind.none:   return true
 
 # Shorthands for constructing values
 const noValue* = TokenValue(kind: ValueKind.none)

@@ -10,7 +10,7 @@ import ../../src/tokens
 #     @[(TokenType, string), (TokenType, bool)]
 # Which is exactly what we're doing here
 # So, a bunch of converter black magic
-macro tokenSeq*(args: untyped): seq[(TokenType, TokenValue, int, int, int)] =
+macro tokenSeq*(args: untyped): seq[(TokenType, TokenValue, int, int)] =
     ## Intercepts the array syntax and applies `toValue` to every 2nd value.
     result = newNimNode(nnkPrefix)
     result.add ident("@") # Build a seq literal
@@ -25,29 +25,27 @@ macro tokenSeq*(args: untyped): seq[(TokenType, TokenValue, int, int, int)] =
         let kindExpr = pair[0]
         let valExpr = pair[1]
 
-        # Construct: (kindExpr, toValue(valExpr), line, col, length)
+        # Construct: (kindExpr, toValue(valExpr), pos, length)
         let mappedTuple = newNimNode(nnkTupleConstr).add(
             kindExpr,
             newCall(ident("toValue"), valExpr),
             pair[2],
-            pair[3],
-            pair[4]
+            pair[3]
         )
         arrayNode.add(mappedTuple)
 
     result.add(arrayNode)
 converter toTokenTuple*[T](pair: (TokenType, T)): (TokenType, TokenValue) = (pair[0], toValue(pair[1]))
 converter toNoneTuple*(pair: (TokenType, typeof(noValue))): (TokenType, TokenValue) = (pair[0], pair[1])
-proc assertTokensImpl(source: string, expected: seq[(TokenType, TokenValue, int, int, int)]) =
+proc assertTokensImpl(source: string, expected: seq[(TokenType, TokenValue, int, int)]) =
     var tokens = newLexer(source, "<test input>").lex()
     check(tokens.len == expected.len + 1)
     for i, exp in expected:
         if i < tokens.len:
-            let (kind, value, line, col, length) = exp
+            let (kind, value, pos, length) = exp
             check(tokens[i].kind == kind)
             check(tokens[i].value == value)
-            check(tokens[i].line == line)
-            check(tokens[i].col == col)
+            check(tokens[i].pos == pos)
             check(tokens[i].length == length)
 template assertTokens*(source: string, expected: untyped) = assertTokensImpl(source, tokenSeq(expected))
 

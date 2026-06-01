@@ -7,20 +7,20 @@ import ../../src/tokens
 
 suite "Lexing: Template strings":
     test "Basic string":
-        assertTokens("`hello world`",  [(TokenType.templateEnd,    "hello world", 1, 1, 13)])
+        assertTokens("`hello world`",  [(TokenType.templateEnd,    "hello world", 0, 13)])
     test "Multiline":
-        assertTokens("`hello\nworld`", [(TokenType.templateEnd,    "hello\nworld", 1, 1, 13)])
+        assertTokens("`hello\nworld`", [(TokenType.templateEnd,    "hello\nworld", 0, 13)])
     test "Interpolation":
-        assertTokens("`hi ${name}`",   [(TokenType.templateStart,  "hi ", 1, 1, 6),
-                                        (TokenType.ident,          "name", 1, 7, 4),
-                                        (TokenType.templateEnd,    "", 1, 1, 12)])
+        assertTokens("`hi ${name}`",   [(TokenType.templateStart,  "hi ", 0, 6),
+                                        (TokenType.ident,          "name", 6, 4),
+                                        (TokenType.templateEnd,    "", 10, 2)])
     test "Multiple interpolations":
-        assertTokens("`h${e}l${l}o`",  [(TokenType.templateStart,  "h", 1, 1, 4),
-                                        (TokenType.ident,          "e", 1, 5, 1),
-                                        (TokenType.templateMiddle, "l", 1, 1, 5),
-                                        (TokenType.ident,          "l", 1, 10, 1),
-                                        (TokenType.templateEnd,    "o", 1, 1, 13)])
+        assertTokens("`h${e}l${l}o`",  [(TokenType.templateStart,  "h", 0, 4),
+                                        (TokenType.ident,          "e", 4, 1),
+                                        (TokenType.templateMiddle, "l", 5, 4),
+                                        (TokenType.ident,          "l", 9, 1),
+                                        (TokenType.templateEnd,    "o", 10, 3)])
     test "Unterminated string":
-        assertError("`hello",          StarchSyntaxError, "unterminated template literal", 1, 1, 1)
+        assertError("`hello",          StarchSyntaxError, "unterminated template literal", 1, 1, 6)
     test "Unterminated interpolation expression":
-        assertError("`hello ${world",  StarchSyntaxError, "EOF while scanning template interpolation", 1, 10, 1)
+        assertError("`hello ${world",  StarchSyntaxError, "EOF while scanning template interpolation", 1, 10, 5)
