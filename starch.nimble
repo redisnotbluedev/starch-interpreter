@@ -7,7 +7,7 @@ license       = "Apache-2.0"
 srcDir        = "src"
 bin           = @["starch"]
 
-
 # Dependencies
 
 requires "nim >= 2.2.10"
+requires "unittest2"

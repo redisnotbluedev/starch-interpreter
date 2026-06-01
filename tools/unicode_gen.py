@@ -1,4 +1,4 @@
-"""Used to generate unicode_tables.nim.
+"""Used to generate src/unicode_tables.nim.
 Extracts XID_Start and XID_Continue from Unicode's DerivedCoreProperties.txt and transforms into Nim code.
 Should be re-generated every Unicode release."""
 

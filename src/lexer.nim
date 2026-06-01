@@ -5,12 +5,7 @@ import std/unicode
 import tokens
 import unicode_tables
 
-# Shorthands for constructing values
-proc toValue*(v: string): TokenValue = TokenValue(kind: ValueKind.string, strVal: v)
-proc toValue*(v: int): TokenValue    = TokenValue(kind: ValueKind.int, intVal: v)
-proc toValue*(v: float): TokenValue  = TokenValue(kind: ValueKind.float, floatVal: v)
-proc toValue*(v: bool): TokenValue   = TokenValue(kind: ValueKind.bool, boolVal: v)
-const noValue* = TokenValue(kind: ValueKind.none)
+# Helpers
 template u*(s: static string): Rune = s.runeAt(0)
 proc isAsciiIn(r: Rune, s: set[char]): bool {.inline.} =
     ## Safely checks if a Rune is an ASCII character within a specific set
@@ -21,7 +16,7 @@ type Lexer* = ref object
     ## A STARCH lexer. Processes raw STARCH code and outputs a sequence of Tokens.
     code*: seq[Rune]
     filename*: string
-    pos*, line*, col*, startCol*, startPos*: int
+    pos*, line*, col*, startCol*, startPos*, startLine*: int
     tokens*: seq[Token]
 
 proc newLexer*(code: string, filename: string = "<starch-input>"): Lexer =
@@ -34,6 +29,7 @@ proc newLexer*(code: string, filename: string = "<starch-input>"): Lexer =
         line: 1,
         col: 1,
         startCol: 1,
+        startLine: 1,
         tokens: @[]
     )
 
@@ -66,7 +62,7 @@ proc error(self: Lexer, kind: typedesc[StarchError], message: string): StarchErr
         kind = kind,
         msg = message,
         context = self.get_line(),
-        line = self.line,
+        line = self.startLine,
         col = self.startCol,
         length = self.pos - self.startPos,
         file = self.filename
@@ -97,9 +93,14 @@ proc skipWhitespace(self: Lexer): void =
 
                 while self.peek() != Rune('\0') and self.peek() != Rune('\n'):
                     comment.add(self.advance())
-                self.tokens.add(self.token(TokenType.comment, toValue(comment)))
+                self.tokens.add(self.token(TokenType.comment, comment))
             elif self.peek(1) == u"*":
                 # Starts with /*
+                let startCol = self.col
+                let startPos = self.pos
+                let startLine = self.line
+                let startCtx = self.get_line()
+
                 discard self.advance()
                 discard self.advance()
 
@@ -114,8 +115,14 @@ proc skipWhitespace(self: Lexer): void =
                         break
                     comment.add(self.advance())
                 if not finished:
-                    raise self.error(StarchSyntaxError, "unterminated block comment")
-                self.tokens.add(self.token(TokenType.comment, toValue(comment)))
+                    raise newStarchError(StarchSyntaxError, "unterminated block comment", startCtx, startLine, startCol, 2, self.filename)
+                self.tokens.add(Token(
+                    kind: TokenType.comment,
+                    value: comment,
+                    line: startLine,
+                    col: startCol,
+                    length: self.pos - startPos
+                ))
             else:
                 break
         else:
@@ -167,7 +174,7 @@ proc readString(self: Lexer): Token =
             message.add(". Perhaps you tried to close with a straight quote ('\"') instead of a smart quote ('”')?")
         raise self.error(StarchSyntaxError, message)
 
-    return self.token(TokenType.string, toValue(text))
+    return self.token(TokenType.string, text)
 
 # Stub it so the compiler understands it
 proc readToken(self: Lexer): Token
@@ -177,11 +184,12 @@ proc readTemplate(self: Lexer): Token =
     let startLine = self.line
     let startCol = self.col
     let startCtx = self.get_line()
-    let startPos = self.pos
+    let initialStartPos = self.pos
 
     var text = ""
     var finished = false
     var kind = TokenType.templateStart
+    var currentStartPos = initialStartPos
 
     discard self.advance() # Eat the starting backtick
 
@@ -192,16 +200,17 @@ proc readTemplate(self: Lexer): Token =
 
             self.tokens.add(Token(
                 kind: kind,
-                value: toValue(text),
+                value: text,
                 line: startLine,
                 col: startCol,
-                length: self.pos - startPos
+                length: self.pos - currentStartPos
             ))
             text = ""
+            currentStartPos = self.pos
             kind = TokenType.templateMiddle
 
             var depth = 0 # Track brace depth — when this reaches -1, we've finished the interpolation
-            while self.pos < self.code.len and depth >= 0:
+            while self.pos < self.code.len:
                 # Exactly the same as the Lexer.lex() loop
                 self.startCol = self.col
                 self.startPos = self.pos
@@ -220,7 +229,13 @@ proc readTemplate(self: Lexer): Token =
                         depth -= 1
                     else: discard
 
-                self.tokens.add(token)
+                if depth >= 0:
+                    self.tokens.add(token)
+                else:
+                    break
+
+            if depth >= 0:
+                raise newStarchError(StarchSyntaxError, "EOF while scanning template interpolation", startCtx, startLine, self.startCol, 1, self.filename)
 
         elif self.peek() == u"`":
             discard self.advance()
@@ -230,14 +245,14 @@ proc readTemplate(self: Lexer): Token =
             text.add(self.advance())
 
     if not finished:
-        raise newStarchError(StarchSyntaxError, "invalid template string literal", startCtx, startLine, startCol, 1, self.filename)
+        raise newStarchError(StarchSyntaxError, "unterminated template literal", startCtx, startLine, startCol, 1, self.filename)
 
     return Token(
         kind: TokenType.templateEnd,
-        value: toValue(text),
+        value: text,
         line: startLine,
         col: startCol,
-        length: self.pos - startPos
+        length: self.pos - initialStartPos
     )
 
 proc readNumber(self: Lexer): Token =
@@ -256,21 +271,23 @@ proc readNumber(self: Lexer): Token =
                 # Hex
                 while self.peek().isAsciiIn({'0'..'9', 'a'..'f', 'A'..'F', '_'}):
                     num.add(self.advance())
-                if num == "":
+                if num == "0x":
                     raise self.error(StarchSyntaxError, "invalid hexadecimal literal")
-                return self.token(TokenType.number, toValue(num))
+                return self.token(TokenType.number, num)
             of u"o":
                 # Octal
                 while self.peek().isAsciiIn({'0'..'7', '_'}):
                     num.add(self.advance())
-                if num == "":
+                if num == "0o":
                     raise self.error(StarchSyntaxError, "invalid octal literal")
-                return self.token(TokenType.number, toValue(num))
+                return self.token(TokenType.number, num)
             of u"b":
                 # Binary
                 while self.peek().isAsciiIn({'0', '1', '_'}):
                     num.add(self.advance())
-                return self.token(TokenType.number, toValue(num))
+                if num == "0b":
+                    raise self.error(StarchSyntaxError, "invalid binary literal")
+                return self.token(TokenType.number, num)
             else:
                 discard
 
@@ -299,8 +316,8 @@ proc readNumber(self: Lexer): Token =
             num.add(self.advance())
 
     if isFloat:
-        return self.token(TokenType.number, toValue(num))
-    return self.token(TokenType.number, toValue(num))
+        return self.token(TokenType.float, num)
+    return self.token(TokenType.number, num)
 
 proc readIdentOrKeyword(self: Lexer): Token =
     var ident = ""
@@ -341,10 +358,10 @@ proc readIdentOrKeyword(self: Lexer): Token =
         else:          TokenType.ident
 
     if kind == TokenType.bool:
-        return self.token(kind, toValue(ident == "true"))
+        return self.token(kind, ident == "true")
 
     if kind == TokenType.ident:
-        return self.token(kind, toValue(ident))
+        return self.token(kind, ident)
 
     return self.token(kind, noValue)
 
@@ -396,7 +413,7 @@ proc readToken(self: Lexer): Token =
         of Rune('`'):
             return self.readTemplate()
         else:
-            if $char in "(){}[];:,.=<>!≈^%":
+            if $char in "(){}[];:,.=<>!≈^%?|":
                 # Single-character tokens
                 var kind: TokenType = case char:
                     of u"(": TokenType.lParen
@@ -411,6 +428,8 @@ proc readToken(self: Lexer): Token =
                     of u"≈": TokenType.approx
                     of u"^": TokenType.caret
                     of u"%": TokenType.percent
+                    of u"?": TokenType.question
+                    of u"|": TokenType.pipe
                     else:    TokenType.eof
 
                 # 2 character tokens
@@ -421,7 +440,7 @@ proc readToken(self: Lexer): Token =
                                 kind = TokenType.neq
                                 discard self.advance()
                             else:
-                                raise self.error(StarchSyntaxError, "invalid syntax")
+                                kind = TokenType.bang
                         of u"=":
                             if self.peek() == u"=":
                                 kind = TokenType.eq
@@ -462,13 +481,15 @@ proc readToken(self: Lexer): Token =
                 if char.isXIDStart() or char == u"_":
                     return self.readIdentOrKeyword()
                 else:
-                    raise self.error(StarchSyntaxError, &"unexpected character {$char}")
+                    discard self.advance()
+                    raise self.error(StarchSyntaxError, &"unexpected character '{$char}'")
 
 proc lex*(self: Lexer): seq[Token] =
     ## Scans the source code and returns a sequence of Tokens.
     while self.pos < self.code.len:
         self.startCol = self.col
         self.startPos = self.pos
+        self.startLine = self.line
         self.skipWhitespace()
 
         if self.pos >= self.code.len:
@@ -476,6 +497,7 @@ proc lex*(self: Lexer): seq[Token] =
 
         self.startCol = self.col
         self.startPos = self.pos
+        self.startLine = self.line
         self.tokens.add(self.readToken())
 
     self.tokens.add(Token(
