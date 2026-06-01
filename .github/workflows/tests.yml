@@ -29,3 +29,4 @@ jobs:
         if: always()
         with:
           report_paths: junit.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
