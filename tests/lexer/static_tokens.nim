@@ -63,6 +63,8 @@ suite "Lexing: Keywords and symbols":
         assertTokens("~>",       [(TokenType.pipeline,    noValue, 0, 2)])
     test "'..' token":
         assertTokens("..",       [(TokenType.range,       noValue, 0, 2)])
+    test "'operator' token":
+        assertTokens("operator", [(TokenType.operator,    noValue, 0, 8)])
     test "'==' token":
         assertTokens("==",       [(TokenType.eq,          noValue, 0, 2)])
     test "'!=' token":

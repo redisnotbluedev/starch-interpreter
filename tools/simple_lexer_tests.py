@@ -17,11 +17,11 @@ code = """
 `try` = "'try'", `catch` = "'catch'", `finally` = "'finally'",
 `throw` = "'throw'",
 # Imports
-using = "'using'", `from` = "'from'",
+`using` = "'using'", `from` = "'from'",
 # Operators
 plus = "'+'", minus = "'-'", star = "'*'", slash = "'/'",
 caret = "'^'", percent = "'%'", concat = "'~'",
-pipeline = "'~>'", range = "'..'",
+pipeline = "'~>'", range = "'..'", operator = "'operator'",
 # Comparison
 eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
 gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",
