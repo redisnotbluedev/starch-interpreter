@@ -1,3 +1,4 @@
+import lexer
 import std/macros
 import std/sets
 import tokens
@@ -177,9 +178,11 @@ type
 
         else: discard
 
-type Program* = ref object
-    ## A collection of statements.
-    statements*: seq[Node]
+    Program* = ref object
+        ## A collection of statements.
+        source*: string
+        lineIndex*: LineIndex
+        statements*: seq[Node]
 
 proc treeRepr(node: Node, prefix: string, isLast: bool): string =
     if node == nil: return ""
