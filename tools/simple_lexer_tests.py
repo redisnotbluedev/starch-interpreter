@@ -20,8 +20,9 @@ code = """
 `using` = "'using'", `from` = "'from'",
 # Operators
 plus = "'+'", minus = "'-'", star = "'*'", slash = "'/'",
-caret = "'^'", percent = "'%'", concat = "'~'",
-pipeline = "'~>'", range = "'..'", operator = "'operator'",
+plusPlus = "'++'", minusMinus = "'--'", caret = "'^'",
+percent = "'%'", concat = "'~'", pipeline = "'~>'",
+range = "'..'", operator = "'operator'",
 # Comparison
 eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
 gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",

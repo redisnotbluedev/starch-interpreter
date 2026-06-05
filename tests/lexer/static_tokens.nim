@@ -53,6 +53,10 @@ suite "Lexing: Keywords and symbols":
         assertTokens("*",        [(TokenType.star,        noValue, 0, 1)])
     test "'/' token":
         assertTokens("/",        [(TokenType.slash,       noValue, 0, 1)])
+    test "'++' token":
+        assertTokens("++",       [(TokenType.plusPlus,    noValue, 0, 2)])
+    test "'--' token":
+        assertTokens("--",       [(TokenType.minusMinus,  noValue, 0, 2)])
     test "'^' token":
         assertTokens("^",        [(TokenType.caret,       noValue, 0, 1)])
     test "'%' token":
