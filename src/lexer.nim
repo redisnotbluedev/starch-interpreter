@@ -1,8 +1,8 @@
-import errors
 import std/algorithm
 import std/strformat
 import std/strutils
 import std/unicode
+import errors
 import tokens
 import unicode_tables
 
@@ -363,6 +363,9 @@ proc readToken(self: Lexer): Token =
             if self.peek() == u"=":
                 discard self.advance()
                 return self.token(TokenType.plusAssign)
+            if self.peek() == u"+":
+                discard self.advance()
+                return self.token(TokenType.plusPlus)
             else:
                 return self.token(TokenType.plus)
         of u"-":
@@ -370,6 +373,9 @@ proc readToken(self: Lexer): Token =
             if self.peek() == u"=":
                 discard self.advance()
                 return self.token(TokenType.minusAssign)
+            elif self.peek() == u"-":
+                discard self.advance()
+                return self.token(TokenType.minusMinus)
             elif self.peek() == u">":
                 discard self.advance()
                 return self.token(TokenType.arrow)
