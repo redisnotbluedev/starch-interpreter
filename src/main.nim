@@ -1,21 +1,30 @@
-import errors
-import lexer
-import tokens
 import std/os
 import std/monotimes
 import std/times
 import std/strformat
+import errors
+import lexer
+import nodes
+import parser
+import tokens
 
 proc main(): void =
     if paramCount() < 1:
         echo "Usage: starch <filename>"
         quit(1)
 
+    let filename = paramStr(1)
+
     # Lex the file
-    let content = paramStr(1).readFile()
-    let tokens = newLexer(content, paramStr(1)).lex()
-    for t in tokens:
+    let content = filename.readFile()
+    let lexer = newLexer(content, filename)
+    for t in lexer.lex():
         echo $t
+
+    # Parse the file
+    echo "----"
+    let parser = newParser(lexer.tokens, filename, content, lexer.lines)
+    echo $parser.parse()
 
 when isMainModule:
     try:

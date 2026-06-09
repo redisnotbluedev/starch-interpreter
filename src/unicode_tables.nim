@@ -1,5 +1,5 @@
-import std/unicode
 import std/algorithm
+import std/unicode
 
 const XID_Start_Ranges = [
     (0x0041, 0x005A),

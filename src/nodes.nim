@@ -1,6 +1,5 @@
-import lexer
 import std/macros
-import std/sets
+import lexer
 import tokens
 
 type
@@ -11,11 +10,12 @@ type
         unaryOp, binaryOp, lambda, `break`, `continue`, `return`,
         throw, `using`, importFrom, ifStatement, whileLoop,
         forLoop, watchStatement, assign, functionDeclaration,
-        matchStatement, tryStatement, classDeclaration, await,
-        `yield`, indexAccess, ternaryIf, comment, comprehension,
-        declarativeObject, typeOptional, typeUnion, typeArgument
+        matchStatement, tryStatement, classDeclaration,
+        await, `yield`, indexAccess, ternaryIf, comment,
+        comprehension, declarativeObject, typeOptional,
+        typeUnion, typeArgument, tupleLiteral
 
-    LiteralKind* = enum
+    LiteralKind* {.pure.} = enum
         int, float, string, bool
 
     Node* = ref object
@@ -29,7 +29,7 @@ type
             paramDefault*: Node
 
         of NodeKind.varDeclaration:
-            varName*: string
+            varName*: Node
             varHint*: Node
             varValue*: Node
             varMutable*: bool
@@ -38,14 +38,12 @@ type
             derivedName*: string
             derivedHint*: Node
             derivedValue*: Node
-            derivedDependencies*: HashSet[Node]
+            derivedDependencies*: seq[Node]
 
         of NodeKind.literal:
-            case literalKind*: LiteralKind
-            of LiteralKind.int:    intVal*: int
-            of LiteralKind.float:  floatVal*: float
-            of LiteralKind.string: stringVal*: string
-            of LiteralKind.bool:   boolVal*: bool
+            case literalKind*: LiteralKind:
+                of LiteralKind.bool: boolVal*: bool
+                else: literalValue*: string
 
         of NodeKind.listLiteral:
             listElements*: seq[Node]
@@ -113,6 +111,7 @@ type
 
         of NodeKind.assign:
             assignVariable*: Node
+            assignOperator*: TokenType # =, +=, -=, etc
             assignValue*: Node
 
         of NodeKind.functionDeclaration:
@@ -123,7 +122,7 @@ type
 
         of NodeKind.matchStatement:
             matchExpression*: Node
-            matchCases*: seq[tuple[patterns: seq[Node], body: seq[Node]]]
+            matchCases*: seq[tuple[patterns: seq[Node], guard: Node, body: seq[Node]]]
 
         of NodeKind.tryStatement:
             tryBody*: seq[Node]
@@ -150,8 +149,8 @@ type
 
         of NodeKind.ternaryIf:
             ternaryCondition*: Node
-            ternaryTrue*: seq[Node]
-            ternaryFalse*: seq[Node]
+            ternaryTrue*: Node
+            ternaryFalse*: Node
 
         of NodeKind.comment:
             comment*: string
@@ -176,7 +175,14 @@ type
             typeArgKind*: Node
             typeArgArgs*: seq[Node]
 
-        else: discard
+        of NodeKind.setLiteral:
+            setItems*: seq[Node]
+
+        of NodeKind.tupleLiteral:
+            tupleItems*: seq[Node]
+
+        of NodeKind.break, NodeKind.continue:
+            discard
 
     Program* = ref object
         ## A collection of statements.
@@ -224,21 +230,21 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         if node.paramDefault != nil: result &= treeRepr(node.paramDefault, p, true)
 
     of NodeKind.varDeclaration:
-        result = header & "var" & (if node.varMutable: " (mut)" else: "") & ": " & node.varName & "\n"
+        result = header & "var" & (if node.varMutable: " (mut)" else: "") & ": "
+        result &= treeRepr(                         node.varName,  p, false)
         if node.varHint  != nil: result &= treeRepr(node.varHint,  p, node.varValue == nil)
         if node.varValue != nil: result &= treeRepr(node.varValue, p, true)
 
     of NodeKind.derivedVariable:
         result = header & "derived: " & node.derivedName & "\n"
-        if node.derivedHint  != nil: result &= treeRepr(node.derivedHint,  p, node.derivedValue == nil)
-        if node.derivedValue != nil: result &= treeRepr(node.derivedValue, p, true)
+        if node.derivedHint  != nil: result &= treeRepr(node.derivedHint,  p, node.derivedValue == nil and node.derivedDependencies.len == 0)
+        if node.derivedValue != nil: result &= treeRepr(node.derivedValue, p, node.derivedDependencies.len == 0)
+        result &= childNodes(node.derivedDependencies, p)
 
     of NodeKind.literal:
         result = header & "literal: " & (case node.literalKind
-            of LiteralKind.int:    $node.intVal
-            of LiteralKind.float:  $node.floatVal
-            of LiteralKind.string: "\"" & node.stringVal & "\""
-            of LiteralKind.bool:   $node.boolVal) & "\n"
+            of LiteralKind.bool:   $node.boolVal
+            else:                  node.literalValue) & "\n"
 
     of NodeKind.listLiteral:
         result = header & "list\n" & childNodes(node.listElements, p)
@@ -331,7 +337,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result &= childNodes(node.watchBody, p)
 
     of NodeKind.assign:
-        result = header & "assign\n"
+        result = header & "assign: " & $node.assignOperator & "\n"
         result &= treeRepr(node.assignVariable, p, false)
         result &= treeRepr(node.assignValue,    p, true)
 
@@ -350,6 +356,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
             let cp2   = if last: "    " else: "│   "
             result &= p & cconn & "case\n"
             result &= childNodes(c.patterns, p & cp2)
+            if c.guard != nil: result &= treeRepr(c.guard, p & cp2, c.body.len == 0)
             result &= childNodes(c.body,     p & cp2)
 
     of NodeKind.tryStatement:
@@ -369,7 +376,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.classDeclaration:
         result = header & "class: " & (if node.className != nil: node.className.name else: "?") & "\n"
-        if node.classParent != nil: result &= treeRepr(node.classParent, p, false)
+        if node.classParent != nil: result &= treeRepr(node.classParent, p, node.classFields.len == 0 and node.classMethods.len == 0 and node.classWatchers.len == 0 and node.classDerivatives.len == 0)
         result &= childNodes(node.classFields,      p)
         result &= childNodes(node.classMethods,     p)
         result &= childNodes(node.classWatchers,    p)
@@ -391,8 +398,8 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
     of NodeKind.ternaryIf:
         result = header & "ternary\n"
         result &= treeRepr(node.ternaryCondition, p, false)
-        result &= childNodes(node.ternaryTrue,    p)
-        result &= childNodes(node.ternaryFalse,   p)
+        result &= treeRepr(node.ternaryTrue,      p, false)
+        result &= treeRepr(node.ternaryFalse,     p, true)
 
     of NodeKind.comment:
         result = header & "# " & node.comment & "\n"
@@ -431,7 +438,10 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.break:    result = header & "break\n"
     of NodeKind.continue: result = header & "continue\n"
-    of NodeKind.setLiteral: result = header & "set\n"
+    of NodeKind.setLiteral:
+        result = header & "set\n" & childNodes(node.setItems, p)
+    of NodeKind.tupleLiteral:
+        result = header & "tuple\n" & childNodes(node.tupleItems, p)
     else: result = header & $node.kind & "\n"
 
 proc `$`*(node: Node): string =

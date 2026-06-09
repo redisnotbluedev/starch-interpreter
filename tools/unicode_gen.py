@@ -10,7 +10,7 @@ PROPERTIES = "https://www.unicode.org/Public/latest/ucd/DerivedCoreProperties.tx
 data = urllib.request.urlopen(PROPERTIES).read().decode("utf-8")
 xid_start = []
 xid_continue = []
-text = "import std/unicode\nimport std/algorithm\n\n"
+text = "import std/algorithm\nimport std/unicode\n\n"
 
 # Syntax:
 # codepoint..codepoint ; core property # general category [total codepoints] CHARACTER NAME
