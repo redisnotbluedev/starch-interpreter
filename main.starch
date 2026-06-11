@@ -1,1 +1,1 @@
-hello = x;
+{"hello": "world", "world": "hello", word: "hi"};
