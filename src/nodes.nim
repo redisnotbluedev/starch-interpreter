@@ -13,7 +13,7 @@ type
         matchStatement, tryStatement, classDeclaration,
         await, `yield`, indexAccess, ternaryIf, comment,
         comprehension, declarativeObject, typeOptional,
-        typeUnion, typeArgument, tupleLiteral
+        typeUnion, genericType, tupleLiteral
 
     LiteralKind* {.pure.} = enum
         int, float, string, bool
@@ -171,9 +171,9 @@ type
         of NodeKind.typeUnion:
             unionKinds*: seq[Node]
 
-        of NodeKind.typeArgument:
-            typeArgKind*: Node
-            typeArgArgs*: seq[Node]
+        of NodeKind.genericType:
+            genericKind*: Node
+            typeArgs*: seq[Node]
 
         of NodeKind.setLiteral:
             setItems*: seq[Node]
@@ -431,10 +431,10 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result = header & "union\n"
         result &= childNodes(node.unionKinds, p)
 
-    of NodeKind.typeArgument:
-        result = header & "typeArg\n"
-        result &= treeRepr(node.typeArgKind, p, node.typeArgArgs.len == 0)
-        result &= childNodes(node.typeArgArgs, p)
+    of NodeKind.genericType:
+        result = header & "generic\n"
+        result &= treeRepr(node.genericKind, p, node.typeArgs.len == 0)
+        result &= childNodes(node.typeArgs, p)
 
     of NodeKind.break:    result = header & "break\n"
     of NodeKind.continue: result = header & "continue\n"
@@ -452,6 +452,6 @@ proc `$`*(program: Program): string =
     for i, node in program.statements:
         result &= treeRepr(node, "", i == program.statements.high)
 
-macro node*(token: Token, kind: NodeKind, args: varargs[untyped]): Node =
+macro node*(token: untyped, kind: NodeKind, args: varargs[untyped]): untyped =
     result = quote do:
         Node(kind: `kind`, pos: `token`.pos, length: `token`.length, `args`)
