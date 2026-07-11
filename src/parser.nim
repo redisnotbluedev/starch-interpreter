@@ -236,7 +236,8 @@ proc parse_primary(self: Parser): Node =
             # (x)
             discard self.advance()
             let expression = self.parse_expression()
-            discard self.parse_expression()
+            discard self.expect(TokenType.rParen)
+            return expression
         of TokenType.lBrace:
             # {} - dict/set literal
             discard self.advance()
