@@ -453,31 +453,34 @@ proc `$`*(program: Program): string =
         result &= treeRepr(node, "", i == program.statements.high)
 
 macro node*(startToken, endToken, nodeKind: untyped, args: varargs[untyped]): untyped =
-    # 1. Start building a standard Nim object construction AST node: Node(...)
+    ## Constructs a Node, deriving positional metadata from two tokens.
+    ## `startToken` is the first token of the node; `endToken` is the last consumed token.
+    ## The span is (endToken.pos + endToken.length) - startToken.pos, which correctly
+    ## yields startToken.length when both arguments are the same token.
     let objConstr = newNimNode(nnkObjConstr)
     objConstr.add(ident("Node"))
 
-    # 2. Add the base fields immediately into the constructor
     objConstr.add(newTree(nnkExprColonExpr, ident("kind"), nodeKind))
     objConstr.add(newTree(nnkExprColonExpr, ident("pos"), newDotExpr(startToken, ident("pos"))))
 
-    # Calculate length: startToken.length + endToken.length
-    let lengthExpr = newTree(nnkInfix, ident("+"),
-        newDotExpr(startToken, ident("length")),
+    # (endToken.pos + endToken.length) - startToken.pos
+    # = byte span from the first character of startToken to the last character of endToken.
+    # When startToken IS endToken this reduces to startToken.length (never zero).
+    let endPos = newTree(nnkInfix, ident("+"),
+        newDotExpr(endToken, ident("pos")),
         newDotExpr(endToken, ident("length"))
+    )
+    let lengthExpr = newTree(nnkInfix, ident("-"), endPos,
+        newDotExpr(startToken, ident("pos"))
     )
     objConstr.add(newTree(nnkExprColonExpr, ident("length"), lengthExpr))
 
-    # 3. Append your custom arguments directly into the constructor fields
     for arg in args:
         if arg.kind == nnkExprColonExpr or arg.kind == nnkExprEqExpr:
-            # Transform both 'key: val' and 'key = val' into proper constructor 'key: val' pairs
             let fieldName = arg[0]
             let value = arg[1]
             objConstr.add(newTree(nnkExprColonExpr, fieldName, value))
         else:
-            # Skip or handle non-assignment statements safely
             discard
 
-    # 5. Return the direct constructor expression! No extra blocks, no temporary variables.
     result = objConstr

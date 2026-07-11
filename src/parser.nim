@@ -24,7 +24,7 @@ proc lookupPos(self: Parser, pos: int): tuple[line: int, col: int, content: stri
 
 proc error(self: Parser, kind: typedesc[StarchError], message: string): StarchError =
     ## Generates an error with intelligent position data.
-    let (line, col, ctx) = self.lookupPos(self.pos)
+    let (line, col, ctx) = self.lookupPos(self.current.pos)
     return newStarchError(
         kind = kind,
         msg = message,
@@ -130,7 +130,7 @@ proc parse_type(self: Parser): Node =
     ## Parse a type hint, with support for unions, generics and optional types.
     let token = self.expect(TokenType.ident)
     # Start with the base identifier
-    var currentType = node(token, self.current, NodeKind.identifier, name = token.value.strVal)
+    var currentType = node(token, self.peek(-1), NodeKind.identifier, name = token.value.strVal)
 
     if self.current.kind == TokenType.lBracket:
         # Generic — TypeA[T]
@@ -141,7 +141,7 @@ proc parse_type(self: Parser): Node =
             parts.add(self.parse_type())
         discard self.expect(TokenType.rBracket)
         # Update currentType instead of returning
-        currentType = node(token, self.current, NodeKind.genericType,
+        currentType = node(token, self.peek(-1), NodeKind.genericType,
             genericKind = currentType,
             typeArgs = parts
         )
@@ -156,7 +156,7 @@ proc parse_type(self: Parser): Node =
         while self.current.kind == TokenType.pipe:
             discard self.advance()
             parts.add(self.parse_type())
-        return node(token, self.current, NodeKind.typeUnion, unionKinds = parts)
+        return node(token, self.peek(-1), NodeKind.typeUnion, unionKinds = parts)
 
     # If not a union, return the current type
     return currentType
@@ -175,10 +175,11 @@ proc parse_params(self: Parser): seq[Node] =
         if self.current.kind == TokenType.or: # (name or "john")
             discard self.advance()
             default = self.parse_expression()
-        params.add(node(name, self.current, NodeKind.parameter,
+        params.add(node(name, self.peek(-1), NodeKind.parameter,
             paramName = name.value.strVal,
             paramHint = hint,
             paramDefault = default))
+    return params
 
 proc parse_block(self: Parser): seq[Node] =
     ## Parse several statements wrapped in braces.
@@ -194,43 +195,43 @@ proc parse_primary(self: Parser): Node =
     case token.kind:
         of TokenType.number:
             discard self.advance()
-            return node(token, self.current, NodeKind.literal,
+            return node(token, self.peek(-1), NodeKind.literal,
                 literalKind = LiteralKind.int,
                 literalValue = token.value.strVal
             )
         of TokenType.float:
             discard self.advance()
-            return node(token, self.current, NodeKind.literal,
+            return node(token, self.peek(-1), NodeKind.literal,
                 literalKind = LiteralKind.float,
                 literalValue = token.value.strVal
             )
         of TokenType.string:
             discard self.advance()
-            return node(token, self.current, NodeKind.literal,
+            return node(token, self.peek(-1), NodeKind.literal,
                 literalKind = LiteralKind.string,
                 literalValue = token.value.strVal
             )
         of TokenType.bool:
             discard self.advance()
-            return node(token, self.current, NodeKind.literal,
+            return node(token, self.peek(-1), NodeKind.literal,
                 literalKind = LiteralKind.bool,
                 boolVal = token.value.boolVal
             )
         of TokenType.ident:
             discard self.advance()
-            return node(token, self.current, NodeKind.identifier,
+            return node(token, self.peek(-1), NodeKind.identifier,
                 name = token.value.strVal
             )
         of TokenType.lParen:
             # () - grouping/lambda
             if self.is_lambda():
                 # () => {}
-                let token = self.advance()
+                discard self.advance()
                 let params = self.parse_params()
                 discard self.expect(TokenType.rParen)
                 discard self.expect(TokenType.fatArrow)
                 let body = self.parse_block()
-                return node(token, self.current, NodeKind.lambda,
+                return node(token, self.peek(-1), NodeKind.lambda,
                     lambdaParams = params,
                     lambdaBody = body)
             # (x)
@@ -255,7 +256,7 @@ proc parse_primary(self: Parser): Node =
             of TokenType.rBrace:
                 # One-item set
                 discard self.advance()
-                return node(token, self.current, NodeKind.setLiteral, setItems = @[first])
+                return node(token, self.peek(-1), NodeKind.setLiteral, setItems = @[first])
             of TokenType.comma:
                 # Set
                 discard self.advance() # consume the comma
@@ -272,7 +273,7 @@ proc parse_primary(self: Parser): Node =
                     discard self.expect(TokenType.comma)
 
                 discard self.expect(TokenType.rBrace)
-                return node(token, self.current, NodeKind.setLiteral, setItems = items)
+                return node(token, self.peek(-1), NodeKind.setLiteral, setItems = items)
             of TokenType.colon:
                 # Dictionary
                 discard self.advance() # consume the colon
@@ -285,13 +286,16 @@ proc parse_primary(self: Parser): Node =
 
                     discard self.expect(TokenType.comma)
 
+                    if self.current.kind == TokenType.rBrace: # support trailing comma
+                        break
+
                     let key = self.parse_expression()
 
                     discard self.expect(TokenType.colon)
                     items.add((key: key, value: self.parse_expression()))
 
                 discard self.expect(TokenType.rBrace)
-                return node(token, self.current, NodeKind.dictLiteral, dictPairs = items)
+                return node(token, self.peek(-1), NodeKind.dictLiteral, dictPairs = items)
             else:
                 raise self.error(StarchSyntaxError, &"unexpected token {self.current} in dict/set literal")
 
@@ -310,7 +314,7 @@ proc parse_primary(self: Parser): Node =
                 discard self.expect(TokenType.comma)
 
             discard self.expect(TokenType.rBracket)
-            return node(token, self.current, NodeKind.listLiteral, listElements = items) # "elements" is kinda inconsistent why is it elements with a list but items with a set??? whatever bro
+            return node(token, self.peek(-1), NodeKind.listLiteral, listElements = items) # "elements" is kinda inconsistent why is it elements with a list but items with a set??? whatever bro
         else:
             raise self.error(StarchSyntaxError, &"unexpected token {token.kind}")
 
@@ -335,7 +339,7 @@ proc parse_expression_statement(self: Parser): Node =
         # RHS
         let value = self.parse_expression()
         self.terminate()
-        return node(token, self.current, NodeKind.assign,
+        return node(token, self.peek(-1), NodeKind.assign,
             assignVariable = expression,
             assignOperator = TokenType.assign,
             assignValue = value
@@ -360,14 +364,14 @@ proc parse_expression_statement(self: Parser): Node =
         let value = self.parse_expression()
         self.terminate()
         # Gets desugared later
-        return node(token, self.current, NodeKind.assign,
+        return node(token, self.peek(-1), NodeKind.assign,
             assignVariable = expression,
             assignOperator = operator,
             assignValue = value
         )
 
     self.terminate()
-    return node(token, self.current, NodeKind.expressionStatement, expression = expression)
+    return node(token, self.peek(-1), NodeKind.expressionStatement, expression = expression)
 
 proc parse_statement(self: Parser): Node =
     ## Parse a statement.
