@@ -46,7 +46,7 @@ proc newLexer*(code: string, filename: string = "<starch-input>"): Lexer =
     )
 
 proc peek(self: Lexer, offset: int = 0): Rune {.inline.} =
-    ## Look at the next token with an offset, without consuming it.
+    ## Look at the next character with an offset, without consuming it.
     if self.pos + offset >= self.code.len:
         return Rune('\0')
     return self.code[self.pos + offset]

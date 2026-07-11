@@ -7,6 +7,7 @@ import nodes
 import tokens
 
 type Parser = ref object
+    ## A STARCH parser. Takes lexed tokens and converts them into an AST.
     tokens*: seq[Token]
     program*: Program
     filename*: string
@@ -22,6 +23,7 @@ proc lookupPos(self: Parser, pos: int): tuple[line: int, col: int, content: stri
     return (line: line + 1, col: col, content: ctx)
 
 proc error(self: Parser, kind: typedesc[StarchError], message: string): StarchError =
+    ## Generates an error with intelligent position data.
     let (line, col, ctx) = self.lookupPos(self.pos)
     return newStarchError(
         kind = kind,
@@ -34,6 +36,7 @@ proc error(self: Parser, kind: typedesc[StarchError], message: string): StarchEr
     )
 
 proc newParser*(tokens: seq[Token], filename: string, source: string, lineIndex: LineIndex): Parser =
+    ## Creates a parser with default values.
     return Parser(
         tokens: tokens,
         program: Program(
@@ -44,6 +47,7 @@ proc newParser*(tokens: seq[Token], filename: string, source: string, lineIndex:
     )
 
 proc current*(self: Parser): Token {.inline.} =
+    ## Get the current token
     if self.pos >= len(self.tokens):
         when defined(debug):
             echo ".current oob; returning eof"
@@ -51,6 +55,7 @@ proc current*(self: Parser): Token {.inline.} =
     return self.tokens[self.pos]
 
 proc peek*(self: Parser, offset: int = 1): Token =
+    ## Look at token self.pos + offset, without consuming it.
     let pos = self.pos + offset
     if pos >= len(self.tokens):
         when defined(debug):
@@ -61,6 +66,7 @@ proc peek*(self: Parser, offset: int = 1): Token =
     return self.tokens[pos]
 
 proc advance(self: Parser): Token =
+    ## Advance past the current token, returning it.
     let token = self.current
     when defined(debug):
         echo "advancing past " & $token
@@ -68,6 +74,7 @@ proc advance(self: Parser): Token =
     return token
 
 proc expect(self: Parser, kind: TokenType): Token =
+    ## Expect a token and consume it. Raises an error if the token is not expected.
     when defined(debug):
         echo &"validating for token {kind}"
     if self.current.kind != kind:
@@ -75,6 +82,7 @@ proc expect(self: Parser, kind: TokenType): Token =
     discard self.advance()
 
 proc terminate(self: Parser) =
+    ## End a statement with a semicolon. Uses intelligent line positioning data for errors.
     when defined(debug):
         echo "=== terminating statement ==="
     if self.current.kind != TokenType.semicolon:
@@ -90,6 +98,7 @@ proc terminate(self: Parser) =
     discard self.advance()
 
 proc is_lambda(self: Parser): bool =
+    ## Checks if the next tokens define a lambda function.
     var pos = self.pos + 1 # skip the left paren
     var depth = 1
     while pos < len(self.tokens):
@@ -107,10 +116,12 @@ proc is_lambda(self: Parser): bool =
         pos += 1
     return false
 
+# Stubs
 proc parse_primary(self: Parser): Node
 proc parse_statement(self: Parser): Node
 
 proc parse_expression(self: Parser): Node =
+    ## Parse a STARCH expression.
     when defined(debug):
         echo "=== parsing expr ==="
     return self.parse_primary()
@@ -151,6 +162,7 @@ proc parse_type(self: Parser): Node =
     return currentType
 
 proc parse_params(self: Parser): seq[Node] =
+    ## Parse parameters in a function definition.
     var params: seq[Node] = @[]
     while self.current.kind != TokenType.rParen:
         let name = self.expect(TokenType.ident)
@@ -169,6 +181,7 @@ proc parse_params(self: Parser): seq[Node] =
             paramDefault = default))
 
 proc parse_block(self: Parser): seq[Node] =
+    ## Parse several statements wrapped in braces.
     discard self.expect(TokenType.lBrace)
     result = @[]
     while self.current.kind != TokenType.rBrace:
@@ -176,6 +189,7 @@ proc parse_block(self: Parser): seq[Node] =
     discard self.expect(TokenType.rBrace)
 
 proc parse_primary(self: Parser): Node =
+    ## Parse a primary expression (literals, identifiers, groups and lambdas)
     let token = self.current
     case token.kind:
         of TokenType.number:
@@ -279,6 +293,7 @@ proc parse_primary(self: Parser): Node =
             raise self.error(StarchSyntaxError, &"unexpected token {token.kind}")
 
 proc parse_expression_statement(self: Parser): Node =
+    ## Parse an ExpressionStatement node, or assignment.
     let token = self.current
     # LHS
     let expression = self.parse_expression()
@@ -333,12 +348,14 @@ proc parse_expression_statement(self: Parser): Node =
     return node(token, self.current, NodeKind.expressionStatement, expression = expression)
 
 proc parse_statement(self: Parser): Node =
+    ## Parse a statement.
     case self.current.kind:
         # tbd
         else:
             return self.parse_expression_statement()
 
 proc parse*(self: Parser): Program =
+    ## Parse the program.
     while self.current.kind != TokenType.eof:
         self.program.statements.add(self.parse_statement())
     when defined(debug):
