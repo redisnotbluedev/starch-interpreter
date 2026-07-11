@@ -238,6 +238,7 @@ proc parse_primary(self: Parser): Node =
             let expression = self.parse_expression()
             discard self.expect(TokenType.rParen)
             return expression
+
         of TokenType.lBrace:
             # {} - dict/set literal
             discard self.advance()
@@ -247,7 +248,7 @@ proc parse_primary(self: Parser): Node =
             # and if it's a right brace it's a one-item set.
             if self.current.kind == TokenType.rBrace:
                 # Empty dict
-                return node(token, self.current, NodeKind.dictLiteral, dictPairs = @[])
+                return node(token, self.advance(), NodeKind.dictLiteral, dictPairs = @[])
 
             let first = self.parse_expression()
             case self.current.kind:
@@ -261,11 +262,16 @@ proc parse_primary(self: Parser): Node =
                 var items = @[first]
 
                 while self.current.kind != TokenType.eof:
+                    # Support trailing commas
+                    if self.current.kind == TokenType.rBrace:
+                        break
+
                     items.add(self.parse_expression())
                     if self.current.kind == TokenType.rBrace:
                         break
                     discard self.expect(TokenType.comma)
-                discard self.advance()
+
+                discard self.expect(TokenType.rBrace)
                 return node(token, self.current, NodeKind.setLiteral, setItems = items)
             of TokenType.colon:
                 # Dictionary
@@ -275,7 +281,6 @@ proc parse_primary(self: Parser): Node =
 
                 while self.current.kind != TokenType.eof:
                     if self.current.kind == TokenType.rBrace:
-                        discard self.advance()
                         break
 
                     discard self.expect(TokenType.comma)
@@ -284,12 +289,28 @@ proc parse_primary(self: Parser): Node =
 
                     discard self.expect(TokenType.colon)
                     items.add((key: key, value: self.parse_expression()))
+
+                discard self.expect(TokenType.rBrace)
                 return node(token, self.current, NodeKind.dictLiteral, dictPairs = items)
             else:
                 raise self.error(StarchSyntaxError, &"unexpected token {self.current} in dict/set literal")
 
         of TokenType.lBracket:
-            discard
+            # [] — list literal
+            discard self.advance()
+
+            var items: seq[Node] = @[]
+            while self.current.kind != TokenType.eof:
+                if self.current.kind == TokenType.rBracket:
+                    break
+
+                items.add(self.parse_expression())
+                if self.current.kind == TokenType.rBracket:
+                    break
+                discard self.expect(TokenType.comma)
+
+            discard self.expect(TokenType.rBracket)
+            return node(token, self.current, NodeKind.listLiteral, listElements = items) # "elements" is kinda inconsistent why is it elements with a list but items with a set??? whatever bro
         else:
             raise self.error(StarchSyntaxError, &"unexpected token {token.kind}")
 
