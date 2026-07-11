@@ -79,7 +79,7 @@ proc expect(self: Parser, kind: TokenType): Token =
         echo &"validating for token {kind}"
     if self.current.kind != kind:
         raise self.error(StarchSyntaxError, &"expected {kind}, got {self.current.kind}")
-    discard self.advance()
+    return self.advance()
 
 proc terminate(self: Parser) =
     ## End a statement with a semicolon. Uses intelligent line positioning data for errors.

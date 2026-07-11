@@ -1,1 +1,6 @@
-{"hello": "world", "world": "hello", word: "hi"};
+"string";
+["list", 1337];
+3.14159;
+(x);
+{"name": "john", "type": "human"};
+{"set", "why", "why not"};
