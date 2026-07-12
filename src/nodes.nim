@@ -408,7 +408,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         let hasStop = node.sliceStop != nil
         let hasStep = node.sliceStep != nil
 
-        if node.indexStart != nil:
+        if node.sliceStart != nil:
             result &= treeRepr(node.sliceStart, p, not hasStop and not hasStep)
         if hasStop:
             result &= treeRepr(node.sliceStop, p, not hasStep)
