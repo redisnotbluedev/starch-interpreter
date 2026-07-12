@@ -274,7 +274,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result &= childNodes(node.callArgs, p)
 
     of NodeKind.memberAccess:
-        result = header & ".\n"
+        result = header & "access:\n"
         result &= treeRepr(node.accessObj,    p, false)
         result &= treeRepr(node.accessMember, p, true)
 
@@ -403,17 +403,27 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.slice:
         result = header & "slice\n"
+
+        # sliceObj is always first, never last
         result &= treeRepr(node.sliceObj, p, false)
 
+        # Determine which fields are non-nil so we know if there are more items after each
         let hasStop = node.sliceStop != nil
         let hasStep = node.sliceStep != nil
 
         if node.sliceStart != nil:
             result &= treeRepr(node.sliceStart, p, not hasStop and not hasStep)
-        if hasStop:
+        elif hasStop or hasStep:
+            result &= p & "├── " & "<empty start>" & "\n"
+
+        if node.sliceStop != nil:
             result &= treeRepr(node.sliceStop, p, not hasStep)
-        if hasStep:
+        elif hasStep:
+            result &= p & "├── " & "<empty stop>" & "\n"
+
+        if node.sliceStep != nil:
             result &= treeRepr(node.sliceStep, p, true)
+
 
     of NodeKind.ternaryIf:
         result = header & "ternary\n"

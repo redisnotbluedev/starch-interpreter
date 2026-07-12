@@ -117,6 +117,7 @@ proc is_lambda(self: Parser): bool =
     return false
 
 # Stubs
+proc parse_call_or_access(self: Parser): Node
 proc parse_primary(self: Parser): Node
 proc parse_statement(self: Parser): Node
 
@@ -124,7 +125,7 @@ proc parse_expression(self: Parser): Node =
     ## Parse a STARCH expression.
     when defined(debug):
         echo "=== parsing expr ==="
-    return self.parse_primary()
+    return self.parse_call_or_access()
 
 proc parse_block(self: Parser): seq[Node] =
     ## Parse several statements wrapped in braces.
