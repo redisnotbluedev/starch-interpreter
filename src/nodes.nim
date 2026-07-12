@@ -13,7 +13,7 @@ type
         matchStatement, tryStatement, classDeclaration,
         await, `yield`, indexAccess, ternaryIf, comment,
         comprehension, declarativeObject, typeOptional,
-        typeUnion, genericType, tupleLiteral
+        typeUnion, genericType, tupleLiteral, slice
 
     LiteralKind* {.pure.} = enum
         int, float, string, bool
@@ -146,6 +146,12 @@ type
         of NodeKind.indexAccess:
             indexObj*: Node
             indexMember*: Node
+
+        of NodeKind.slice:
+            sliceObj*: Node
+            sliceStart*: Node
+            sliceStop*: Node
+            sliceStep*: Node
 
         of NodeKind.ternaryIf:
             ternaryCondition*: Node
@@ -394,6 +400,20 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result = header & "index\n"
         result &= treeRepr(node.indexObj,    p, false)
         result &= treeRepr(node.indexMember, p, true)
+
+    of NodeKind.slice:
+        result = header & "slice\n"
+        result &= treeRepr(node.sliceObj, p, false)
+
+        let hasStop = node.sliceStop != nil
+        let hasStep = node.sliceStep != nil
+
+        if node.indexStart != nil:
+            result &= treeRepr(node.sliceStart, p, not hasStop and not hasStep)
+        if hasStop:
+            result &= treeRepr(node.sliceStop, p, not hasStep)
+        if hasStep:
+            result &= treeRepr(node.sliceStep, p, true)
 
     of NodeKind.ternaryIf:
         result = header & "ternary\n"
