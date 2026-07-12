@@ -1,8 +1,8 @@
 - [ ] parse_expression
 - [ ] parse_pipeline (~>)
 - [ ] parse_ternary (condition ? true : false)
-- [ ] parse_logical_or (or / ||)
-- [ ] parse_logical_and (and / &&)
+- [ ] parse_or (or)
+- [ ] parse_and (and)
 - [ ] parse_equality (==, !=)
 - [ ] parse_comparison (<, >, <=, >=)
 - [ ] parse_bitwise (|, &)
