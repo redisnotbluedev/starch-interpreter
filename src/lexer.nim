@@ -336,6 +336,7 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "match":    TokenType.match
         of "case":     TokenType.case
         of "operator": TokenType.operator
+        of "new":      TokenType.new
         else:          TokenType.ident
 
     if kind == TokenType.bool:
