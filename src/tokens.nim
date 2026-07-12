@@ -10,7 +10,7 @@ type TokenType* {.pure.} = enum
     templateEnd = "template string (end)",
     # Definitions
     `var` = "'var'", `const` = "'const'", function = "'function'",
-    `derive` = "'derive'", `class` = "'class'", new = "'new'",
+    `derive` = "'derive'", `class` = "'class'",
     # Branching
     `if` = "'if'", `elif` = "'elif'", `else` = "'else'",
     `match` = "'match'", `case` = "'case'",

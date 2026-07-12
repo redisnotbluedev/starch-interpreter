@@ -257,7 +257,8 @@ proc parse_call_or_access(self: Parser): Node =
                 return expression
 
 proc parse_primary(self: Parser): Node =
-    ## Parse a primary expression (literals, identifiers, groups and lambdas)
+    ## Parse a primary expression (literals, identifiers, groups and lambdas).
+    # TODO: This does not support comprehensions.
     let token = self.current
     case token.kind:
         of TokenType.number:
