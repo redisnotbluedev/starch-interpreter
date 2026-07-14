@@ -446,8 +446,14 @@ proc parse_additive(self: Parser): Node =
         )
     return left
 
-proc parse_comparison(self: Parser): Node =
+proc parse_range(self: Parser): Node =
     return self.parse_additive()
+
+proc parse_concat(self: Parser): Node =
+    return self.parse_range()
+
+proc parse_comparison(self: Parser): Node =
+    return self.parse_concat()
 
 proc parse_equality(self: Parser): Node =
     return self.parse_comparison()
