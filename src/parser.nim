@@ -117,14 +117,14 @@ proc is_lambda(self: Parser): bool =
     return false
 
 # Stubs
-proc parse_call_or_access(self: Parser): Node
+proc parse_pipeline(self: Parser): Node
 proc parse_statement(self: Parser): Node
 
 proc parse_expression(self: Parser): Node =
     ## Parse a STARCH expression.
     when defined(debug):
         echo "=== parsing expr ==="
-    return self.parse_call_or_access()
+    return self.parse_pipeline()
 
 proc parse_block(self: Parser): seq[Node] =
     ## Parse several statements wrapped in braces.
@@ -384,6 +384,33 @@ proc parse_call_or_access(self: Parser): Node =
                 expression = node(start, self.current, NodeKind.memberAccess, accessObj = expression, accessMember = member)
             else:
                 return expression
+
+proc parse_unary(self: Parser): Node =
+    return self.parse_call_or_access()
+
+proc parse_multiplicative(self: Parser): Node =
+    return self.parse_unary()
+
+proc parse_additive(self: Parser): Node =
+    return self.parse_multiplicative()
+
+proc parse_comparison(self: Parser): Node =
+    return self.parse_additive()
+
+proc parse_equality(self: Parser): Node =
+    return self.parse_comparison()
+
+proc parse_and(self: Parser): Node =
+    return self.parse_equality()
+
+proc parse_or(self: Parser): Node =
+    return self.parse_and()
+
+proc parse_ternary(self: Parser): Node =
+    return self.parse_or()
+
+proc parse_pipeline(self: Parser): Node =
+    return self.parse_ternary()
 
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement node, or assignment.
