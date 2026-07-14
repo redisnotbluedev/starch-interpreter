@@ -118,7 +118,6 @@ proc is_lambda(self: Parser): bool =
 
 # Stubs
 proc parse_call_or_access(self: Parser): Node
-proc parse_primary(self: Parser): Node
 proc parse_statement(self: Parser): Node
 
 proc parse_expression(self: Parser): Node =
@@ -198,63 +197,6 @@ proc parse_args(self: Parser): seq[Node] =
         if self.current.kind == TokenType.comma:
             discard self.advance()
     return args
-
-proc parse_call_or_access(self: Parser): Node =
-    ## Parse a call or member access (function calls, indexes and dot notation).
-    let start = self.current
-    var expression = self.parse_primary()
-
-    while true:
-        case self.current.kind:
-            of TokenType.lParen:
-                # Function call
-                discard self.advance()
-                let args = self.parse_args()
-                discard self.expect(TokenType.rParen)
-                expression = node(start, self.current, NodeKind.functionCall, callCallee = expression, callArgs = args)
-
-            of TokenType.lBracket:
-                # Index access
-                discard self.advance()
-                var isSlice = false
-                var index, stop, step: Node
-
-                # Slot 1: Start/Index
-                if not (self.current.kind in {TokenType.colon, TokenType.rBracket}):
-                    index = self.parse_expression()
-
-                # Slot 2: Stop
-                if self.current.kind == TokenType.colon:
-                    isSlice = true
-                    discard self.advance()
-
-                    if not (self.current.kind in {TokenType.colon, TokenType.rBracket}):
-                        stop = self.parse_expression()
-
-                # Slot 3: Step
-                if self.current.kind == TokenType.colon:
-                    discard self.advance()
-                    if self.current.kind == TokenType.rBracket:
-                        raise self.error(StarchSyntaxError, "expected expression")
-
-                    step = self.parse_expression()
-
-                discard self.expect(TokenType.rBracket)
-                if isSlice and index == nil and stop == nil and step == nil:
-                    raise self.error(StarchSyntaxError, "no slice values specified")
-
-                if isSlice:
-                    expression = node(start, self.current, NodeKind.slice, sliceObj = expression, sliceStart = index, sliceStop = stop, sliceStep = step)
-                else:
-                    expression = node(start, self.current, NodeKind.indexAccess, indexObj = expression, indexMember = index)
-
-            of TokenType.dot:
-                # Member access
-                discard self.advance()
-                let member = self.parse_expression()
-                expression = node(start, self.current, NodeKind.memberAccess, accessObj = expression, accessMember = member)
-            else:
-                return expression
 
 proc parse_primary(self: Parser): Node =
     ## Parse a primary expression (literals, identifiers, groups and lambdas).
@@ -385,6 +327,63 @@ proc parse_primary(self: Parser): Node =
             return node(token, self.peek(-1), NodeKind.listLiteral, listElements = items) # "elements" is kinda inconsistent why is it elements with a list but items with a set??? whatever bro
         else:
             raise self.error(StarchSyntaxError, &"unexpected token {token.kind}")
+
+proc parse_call_or_access(self: Parser): Node =
+    ## Parse a call or member access (function calls, indexes and dot notation).
+    let start = self.current
+    var expression = self.parse_primary()
+
+    while true:
+        case self.current.kind:
+            of TokenType.lParen:
+                # Function call
+                discard self.advance()
+                let args = self.parse_args()
+                discard self.expect(TokenType.rParen)
+                expression = node(start, self.current, NodeKind.functionCall, callCallee = expression, callArgs = args)
+
+            of TokenType.lBracket:
+                # Index access
+                discard self.advance()
+                var isSlice = false
+                var index, stop, step: Node
+
+                # Slot 1: Start/Index
+                if not (self.current.kind in {TokenType.colon, TokenType.rBracket}):
+                    index = self.parse_expression()
+
+                # Slot 2: Stop
+                if self.current.kind == TokenType.colon:
+                    isSlice = true
+                    discard self.advance()
+
+                    if not (self.current.kind in {TokenType.colon, TokenType.rBracket}):
+                        stop = self.parse_expression()
+
+                # Slot 3: Step
+                if self.current.kind == TokenType.colon:
+                    discard self.advance()
+                    if self.current.kind == TokenType.rBracket:
+                        raise self.error(StarchSyntaxError, "expected expression")
+
+                    step = self.parse_expression()
+
+                discard self.expect(TokenType.rBracket)
+                if isSlice and index == nil and stop == nil and step == nil:
+                    raise self.error(StarchSyntaxError, "no slice values specified")
+
+                if isSlice:
+                    expression = node(start, self.current, NodeKind.slice, sliceObj = expression, sliceStart = index, sliceStop = stop, sliceStep = step)
+                else:
+                    expression = node(start, self.current, NodeKind.indexAccess, indexObj = expression, indexMember = index)
+
+            of TokenType.dot:
+                # Member access
+                discard self.advance()
+                let member = self.parse_expression()
+                expression = node(start, self.current, NodeKind.memberAccess, accessObj = expression, accessMember = member)
+            else:
+                return expression
 
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement node, or assignment.
