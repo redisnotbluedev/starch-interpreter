@@ -8,5 +8,6 @@
 - [ ] parse_additive (+, -)
 - [ ] parse_multiplicative (*, /, %)
 - [x] parse_unary (!, -, await, yield)
+- [x] parse_exponent (^)
 - [x] parse_call_or_access ((), [], .)
 - [x] parse_primary (Literals, Identifiers, Grouping, Lambdas)

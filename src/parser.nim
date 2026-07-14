@@ -396,6 +396,18 @@ proc parse_call_or_access(self: Parser): Node =
             else:
                 return expression
 
+proc parse_exponent(self: Parser): Node =
+    let base = self.parse_call_or_access()
+    if self.current.kind == TokenType.caret:
+        let token = self.advance()
+        let exponent = self.parse_exponent()
+        return node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = token,
+            binaryLeft = base,
+            binaryRight = exponent
+        )
+    return base
+
 proc parse_unary(self: Parser): Node =
     let token = self.current
     if token.kind in {TokenType.minus, TokenType.bang, TokenType.await, TokenType.yield}:
@@ -403,7 +415,7 @@ proc parse_unary(self: Parser): Node =
         let operand = self.parse_unary()
         return node(token, self.peek(-1), NodeKind.unaryOp, unaryOperator = token.kind, unaryOperand = operand)
 
-    return self.parse_call_or_access()
+    return self.parse_exponent()
 
 proc parse_multiplicative(self: Parser): Node =
     return self.parse_unary()
