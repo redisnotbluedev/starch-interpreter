@@ -129,6 +129,7 @@ proc is_lambda(self: Parser): bool =
 
 # Stubs
 proc parse_pipeline(self: Parser): Node
+proc parse_unary(self: Parser): Node
 proc parse_statement(self: Parser): Node
 
 proc parse_expression(self: Parser): Node =
@@ -400,9 +401,9 @@ proc parse_exponent(self: Parser): Node =
     let base = self.parse_call_or_access()
     if self.current.kind == TokenType.caret:
         let token = self.advance()
-        let exponent = self.parse_exponent()
+        let exponent = self.parse_unary()
         return node(token, self.peek(-1), NodeKind.binaryOp,
-            binaryOperator = token,
+            binaryOperator = token.kind,
             binaryLeft = base,
             binaryRight = exponent
         )
@@ -418,10 +419,32 @@ proc parse_unary(self: Parser): Node =
     return self.parse_exponent()
 
 proc parse_multiplicative(self: Parser): Node =
-    return self.parse_unary()
+    var left = self.parse_unary()
+
+    while self.current.kind in {TokenType.star, TokenType.slash, TokenType.percent}:
+        let token = self.current
+        let operator = self.advance().kind
+        let right = self.parse_unary()
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = operator,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_additive(self: Parser): Node =
-    return self.parse_multiplicative()
+    var left = self.parse_multiplicative()
+
+    while self.current.kind in {TokenType.plus, TokenType.minus}:
+        let token = self.current
+        let operator = self.advance().kind
+        let right = self.parse_multiplicative()
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = operator,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_comparison(self: Parser): Node =
     return self.parse_additive()

@@ -6,7 +6,7 @@
 - [ ] parse_equality (==, !=)
 - [ ] parse_comparison (<, >, <=, >=)
 - [ ] parse_additive (+, -)
-- [ ] parse_multiplicative (*, /, %)
+- [x] parse_multiplicative (*, /, %)
 - [x] parse_unary (!, -, await, yield)
 - [x] parse_exponent (^)
 - [x] parse_call_or_access ((), [], .)
