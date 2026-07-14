@@ -195,6 +195,7 @@ type
         source*: string
         lineIndex*: LineIndex
         statements*: seq[Node]
+        comments*: seq[Token] # dumping ground for comments to use later
 
 proc treeRepr(node: Node, prefix: string, isLast: bool): string =
     if node == nil: return ""

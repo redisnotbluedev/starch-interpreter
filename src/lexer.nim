@@ -325,9 +325,6 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "derive":   TokenType.derive
         of "true":     TokenType.bool
         of "false":    TokenType.bool
-        of "and":      TokenType.and
-        of "or":       TokenType.or
-        of "not":      TokenType.not
         of "class":    TokenType.class
         of "try":      TokenType.try
         of "catch":    TokenType.catch
@@ -336,6 +333,8 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "match":    TokenType.match
         of "case":     TokenType.case
         of "operator": TokenType.operator
+        of "await":    TokenType.await
+        of "yield":    TokenType.yield
         else:          TokenType.ident
 
     if kind == TokenType.bool:
@@ -400,7 +399,7 @@ proc readToken(self: Lexer): Token =
         of Rune('`'):
             return self.readTemplate()
         else:
-            if $char in "(){}[];:,.=<>!≈^%?|":
+            if $char in "(){}[];:,.=<>!≈^%?|&":
                 # Single-character tokens
                 var kind: TokenType = case char:
                     of u"(": TokenType.lParen
@@ -416,7 +415,6 @@ proc readToken(self: Lexer): Token =
                     of u"^": TokenType.caret
                     of u"%": TokenType.percent
                     of u"?": TokenType.question
-                    of u"|": TokenType.pipe
                     else:    TokenType.eof
 
                 # 2 character tokens
@@ -468,6 +466,21 @@ proc readToken(self: Lexer): Token =
                             else:
                                 discard self.advance()
                                 kind = TokenType.dot
+                        of u"|":
+                            if self.peek(1) == u"|":
+                                discard self.advance()
+                                discard self.advance()
+                                kind = TokenType.or
+                            else:
+                                discard self.advance()
+                                kind = TokenType.pipe
+                        of u"&":
+                            discard self.advance()
+                            if self.peek() == u"&":
+                                discard self.advance()
+                                kind = TokenType.and
+                            else:
+                                raise self.error(StarchSyntaxError, "unexpected single '&', did you mean '&&'?")
                         else:
                             discard self.advance()
                 else:

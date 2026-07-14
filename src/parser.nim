@@ -37,11 +37,22 @@ proc error(self: Parser, kind: typedesc[StarchError], message: string): StarchEr
 
 proc newParser*(tokens: seq[Token], filename: string, source: string, lineIndex: LineIndex): Parser =
     ## Creates a parser with default values.
+    ## Comment tokens are stripped from the token stream up front and stored in
+    ## Program.comments so that all helpers can ignore them entirely.
+    var filteredTokens: seq[Token] = @[]
+    var comments: seq[Token] = @[]
+    for token in tokens:
+        if token.kind == TokenType.comment:
+            comments.add(token)
+        else:
+            filteredTokens.add(token)
+
     return Parser(
-        tokens: tokens,
+        tokens: filteredTokens,
         program: Program(
             source: source,
-            lineIndex: lineIndex
+            lineIndex: lineIndex,
+            comments: comments
         ),
         filename: filename
     )
@@ -386,6 +397,12 @@ proc parse_call_or_access(self: Parser): Node =
                 return expression
 
 proc parse_unary(self: Parser): Node =
+    let token = self.current
+    if token.kind in {TokenType.minus, TokenType.bang, TokenType.await, TokenType.yield}:
+        discard self.advance()
+        let operand = self.parse_unary()
+        return node(token, self.peek(-1), NodeKind.unaryOp, unaryOperator = token.kind, unaryOperand = operand)
+
     return self.parse_call_or_access()
 
 proc parse_multiplicative(self: Parser): Node =

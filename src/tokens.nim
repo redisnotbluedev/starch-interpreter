@@ -10,13 +10,14 @@ type TokenType* {.pure.} = enum
     templateEnd = "template string (end)",
     # Definitions
     `var` = "'var'", `const` = "'const'", function = "'function'",
-    `derive` = "'derive'", `class` = "'class'",
+    `derive` = "'derive'", `class` = "'class'", watch = "'watch'",
     # Branching
     `if` = "'if'", `elif` = "'elif'", `else` = "'else'",
     `match` = "'match'", `case` = "'case'",
-    # Looping
+    # Control flow
     `for` = "'for'", `while` = "'while'",
     `break` = "'break'", `continue` = "'continue'",
+    await = "'await'", `yield` = "'yield'",
     # Errors
     `try` = "'try'", `catch` = "'catch'", `finally` = "'finally'",
     `throw` = "'throw'",
@@ -31,19 +32,18 @@ type TokenType* {.pure.} = enum
     eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
     gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",
     # Logical
-    `and` = "'and'", `or` = "'or'", `not` = "'not'",
+    `and` = "'&&'", `or` = "'||'",
     # Punctuation
     lParen = "'('", rParen = "')'", lBrace = "'{'",
     rBrace = "'}'", lBracket = "'['", rBracket = "']'",
     semicolon = "';'", colon = "':'", comma = "','", dot = "'.'",
     arrow = "'->'", fatArrow = "'=>'", assign = "'='",
-    bang = "'!'", question = "'?'", pipe = "'|'",
+    bang = "'!'", question = "'?'", pipe = "'|'"
     # Compound assignment
     plusAssign = "'+='", minusAssign = "'-='",
     starAssign = "'*='", slashAssign = "'/='",
     # Misc
-    `return` = "'return'", watch = "'watch'",
-    ident = "identifier",
+    `return` = "'return'", ident = "identifier",
     # Special
     comment = "comment", eof = "EOF"
 

@@ -1,5 +1,4 @@
-foo();
-[1, 2, 3, 4][0:3];
-"Hello, World"[::1];
-foo.bar;
-foo.bar.baz(x);
+-1;
+!false;
+await slow_thing();
+yield value;
