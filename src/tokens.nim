@@ -31,6 +31,7 @@ type TokenType* {.pure.} = enum
     # Comparison
     eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
     gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",
+    `notIn` = "'not in'", `isNot` = "'is not'",
     # Logical
     `and` = "'&&'", `or` = "'||'",
     # Punctuation

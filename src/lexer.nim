@@ -304,6 +304,37 @@ proc readIdentOrKeyword(self: Lexer): Token =
     while self.peek().isXIDContinue():
         ident.add(self.advance())
 
+    if ident == "is":
+        # Save state in there isn't a "not"
+        let savedPos = self.pos
+
+        while self.peek() == u" " or self.peek() == u"\t":
+            discard self.advance()
+
+        var nextIdent = ""
+        while self.peek().isXIDContinue():
+            nextIdent.add(self.advance())
+
+        if nextIdent == "not":
+            return self.token(TokenType.isNot, noValue)
+
+        # It wasn't "not", roll back the lexer.
+        self.pos = savedPos
+        return self.token(TokenType.is, noValue)
+
+    if ident == "not":
+        while self.peek() == u" " or self.peek() == u"\t":
+            discard self.advance()
+
+        var nextIdent = ""
+        while self.peek().isXIDContinue():
+            nextIdent.add(self.advance())
+
+        if nextIdent == "in":
+            return self.token(TokenType.notIn, noValue)
+
+        raise self.error(StarchSyntaxError, "Unexpected token 'not'. Did you mean to use 'not in', 'is not', or '!'?")
+
     # Reserved keywords
     let kind = case ident:
         of "var":      TokenType.var
@@ -335,6 +366,8 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "operator": TokenType.operator
         of "await":    TokenType.await
         of "yield":    TokenType.yield
+        of "not in":   TokenType.notIn
+        of "is not":   TokenType.isNot
         else:          TokenType.ident
 
     if kind == TokenType.bool:
