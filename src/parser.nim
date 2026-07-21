@@ -447,9 +447,14 @@ proc parse_additive(self: Parser): Node =
     return left
 
 proc parse_range(self: Parser): Node =
-    let left = self.parse_additive();
+    let token = self.current
+    let left = self.parse_additive()
 
-    while self.current.kind == TokenType.range
+    if self.current.kind == TokenType.range:
+        discard self.advance()
+        let right = self.parse_additive()
+        return node(token, self.peek(-1), NodeKind.binaryOp, TokenType.range, left, right)
+    return left
 
 proc parse_concat(self: Parser): Node =
     return self.parse_range()
