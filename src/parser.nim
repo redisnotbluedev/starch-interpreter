@@ -475,10 +475,20 @@ proc parse_concat(self: Parser): Node =
 
 proc parse_comparison(self: Parser): Node =
     ## Parse comparative operators (<, >).
-    return self.parse_concat()
+    let token = self.current
+    var left = self.parse_concat()
+
+    while self.current.kind in {
+        TokenType.gt, TokenType.gte, TokenType.lt,
+        TokenType.lte, TokenType.in, TokenType.notIn
+    }:
+        let operator = self.advance().kind
+        let right = self.parse_concat()
+        left = node(token, self.peek(-1), Nodekind.binaryOp, operator, left, right)
+    return left
 
 proc parse_equality(self: Parser): Node =
-    ## Parse equality operators (==, !=).
+    ## Parse equality operators (==, is).
     return self.parse_comparison()
 
 proc parse_and(self: Parser): Node =
