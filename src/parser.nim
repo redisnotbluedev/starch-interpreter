@@ -457,7 +457,15 @@ proc parse_range(self: Parser): Node =
     return left
 
 proc parse_concat(self: Parser): Node =
-    return self.parse_range()
+    let token = self.current
+    var left = self.parse_range()
+
+    while self.current.kind == TokenType.concat:
+        discard self.advance()
+        let right = self.parse_range()
+        left = node(token, self.peek(-1), NodeKind.binaryOp, TokenType.concat, left, right)
+
+    return left
 
 proc parse_comparison(self: Parser): Node =
     return self.parse_concat()
