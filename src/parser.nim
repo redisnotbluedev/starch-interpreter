@@ -458,7 +458,11 @@ proc parse_range(self: Parser): Node =
     if self.current.kind == TokenType.range:
         discard self.advance()
         let right = self.parse_additive()
-        return node(token, self.peek(-1), NodeKind.binaryOp, TokenType.range, left, right)
+        return node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = TokenType.range,
+            binaryLeft = left,
+            binaryRight = right
+        )
     return left
 
 proc parse_concat(self: Parser): Node =
@@ -469,7 +473,11 @@ proc parse_concat(self: Parser): Node =
     while self.current.kind == TokenType.concat:
         discard self.advance()
         let right = self.parse_range()
-        left = node(token, self.peek(-1), NodeKind.binaryOp, TokenType.concat, left, right)
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = TokenType.concat,
+            binaryLeft = left,
+            binaryRight = right
+        )
 
     return left
 
@@ -484,7 +492,11 @@ proc parse_comparison(self: Parser): Node =
     }:
         let operator = self.advance().kind
         let right = self.parse_concat()
-        left = node(token, self.peek(-1), Nodekind.binaryOp, operator, left, right)
+        left = node(token, self.peek(-1), Nodekind.binaryOp,
+            binaryOperator = operator,
+            binaryLeft = left,
+            binaryRight = right
+        )
     return left
 
 proc parse_equality(self: Parser): Node =
