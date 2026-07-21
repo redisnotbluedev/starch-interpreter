@@ -352,7 +352,7 @@ proc parse_call_or_access(self: Parser): Node =
                 discard self.advance()
                 let args = self.parse_args()
                 discard self.expect(TokenType.rParen)
-                expression = node(start, self.current, NodeKind.functionCall, callCallee = expression, callArgs = args)
+                expression = node(start, self.peek(-1), NodeKind.functionCall, callCallee = expression, callArgs = args)
 
             of TokenType.lBracket:
                 # Index access
@@ -385,15 +385,15 @@ proc parse_call_or_access(self: Parser): Node =
                     raise self.error(StarchSyntaxError, "no slice values specified")
 
                 if isSlice:
-                    expression = node(start, self.current, NodeKind.slice, sliceObj = expression, sliceStart = index, sliceStop = stop, sliceStep = step)
+                    expression = node(start, self.peek(-1), NodeKind.slice, sliceObj = expression, sliceStart = index, sliceStop = stop, sliceStep = step)
                 else:
-                    expression = node(start, self.current, NodeKind.indexAccess, indexObj = expression, indexMember = index)
+                    expression = node(start, self.peek(-1), NodeKind.indexAccess, indexObj = expression, indexMember = index)
 
             of TokenType.dot:
                 # Member access
                 discard self.advance()
                 let member = self.parse_expression()
-                expression = node(start, self.current, NodeKind.memberAccess, accessObj = expression, accessMember = member)
+                expression = node(start, self.peek(-1), NodeKind.memberAccess, accessObj = expression, accessMember = member)
             else:
                 return expression
 
