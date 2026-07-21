@@ -398,6 +398,7 @@ proc parse_call_or_access(self: Parser): Node =
                 return expression
 
 proc parse_exponent(self: Parser): Node =
+    ## Parse an exponent.
     let base = self.parse_call_or_access()
     if self.current.kind == TokenType.caret:
         let token = self.advance()
@@ -410,6 +411,7 @@ proc parse_exponent(self: Parser): Node =
     return base
 
 proc parse_unary(self: Parser): Node =
+    ## Parse a unary (prefix) operation.
     let token = self.current
     if token.kind in {TokenType.minus, TokenType.bang, TokenType.await, TokenType.yield}:
         discard self.advance()
@@ -419,6 +421,7 @@ proc parse_unary(self: Parser): Node =
     return self.parse_exponent()
 
 proc parse_multiplicative(self: Parser): Node =
+    ## Parse a multiplicative operation (*, /).
     var left = self.parse_unary()
 
     while self.current.kind in {TokenType.star, TokenType.slash, TokenType.percent}:
@@ -433,6 +436,7 @@ proc parse_multiplicative(self: Parser): Node =
     return left
 
 proc parse_additive(self: Parser): Node =
+    ## Parse an additive operation (+, -).
     var left = self.parse_multiplicative()
 
     while self.current.kind in {TokenType.plus, TokenType.minus}:
@@ -447,6 +451,7 @@ proc parse_additive(self: Parser): Node =
     return left
 
 proc parse_range(self: Parser): Node =
+    ## Parse the range operator (..).
     let token = self.current
     let left = self.parse_additive()
 
@@ -457,6 +462,7 @@ proc parse_range(self: Parser): Node =
     return left
 
 proc parse_concat(self: Parser): Node =
+    ## Parse the concatenation operator (x ~ y).
     let token = self.current
     var left = self.parse_range()
 
@@ -468,21 +474,27 @@ proc parse_concat(self: Parser): Node =
     return left
 
 proc parse_comparison(self: Parser): Node =
+    ## Parse comparative operators (<, >).
     return self.parse_concat()
 
 proc parse_equality(self: Parser): Node =
+    ## Parse equality operators (==, !=).
     return self.parse_comparison()
 
 proc parse_and(self: Parser): Node =
+    ## Parse the and operator (&&).
     return self.parse_equality()
 
 proc parse_or(self: Parser): Node =
+    ## Parse the or operator (||).
     return self.parse_and()
 
 proc parse_ternary(self: Parser): Node =
+    ## Parse the ternary if operator (condition ? true : false)
     return self.parse_or()
 
 proc parse_pipeline(self: Parser): Node =
+    ## Parse the pipeline operator (~>)
     return self.parse_ternary()
 
 proc parse_expression_statement(self: Parser): Node =
