@@ -492,7 +492,7 @@ proc parse_comparison(self: Parser): Node =
     }:
         let operator = self.advance().kind
         let right = self.parse_concat()
-        left = node(token, self.peek(-1), Nodekind.binaryOp,
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
             binaryOperator = operator,
             binaryLeft = left,
             binaryRight = right
@@ -510,7 +510,7 @@ proc parse_equality(self: Parser): Node =
     }:
         let operator = self.advance().kind
         let right = self.parse_comparison()
-        left = node(token, self.peek(-1), Nodekind.binaryOp,
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
             binaryOperator = operator,
             binaryLeft = left,
             binaryRight = right
@@ -519,7 +519,18 @@ proc parse_equality(self: Parser): Node =
 
 proc parse_and(self: Parser): Node =
     ## Parse the and operator (&&).
-    return self.parse_equality()
+    let token = self.current
+    var left = self.prase_equality()
+
+    while self.current.kind == TokenType.and:
+        discard self.advance()
+        let right = self.parse_not()
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = TokenType.and,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_or(self: Parser): Node =
     ## Parse the or operator (||).
