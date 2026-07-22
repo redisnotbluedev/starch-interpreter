@@ -524,7 +524,7 @@ proc parse_and(self: Parser): Node =
 
     while self.current.kind == TokenType.and:
         discard self.advance()
-        let right = self.parse_not()
+        let right = self.parse_equality()
         left = node(token, self.peek(-1), NodeKind.binaryOp,
             binaryOperator = TokenType.and,
             binaryLeft = left,
@@ -534,7 +534,18 @@ proc parse_and(self: Parser): Node =
 
 proc parse_or(self: Parser): Node =
     ## Parse the or operator (||).
-    return self.parse_and()
+    let token = self.current
+    var left = self.prase_and()
+
+    while self.current.kind == TokenType.or:
+        discard self.advance()
+        let right = self.parse_and()
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = TokenType.or,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_ternary(self: Parser): Node =
     ## Parse the ternary if operator (condition ? true : false)
