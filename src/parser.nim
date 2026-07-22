@@ -579,6 +579,29 @@ proc parse_pipeline(self: Parser): Node =
         )
     return left
 
+proc parse_var_decl(self: Parser): Node =
+    ## Parse a variable declaration.
+    let token = self.advance()
+    let name = self.expect(TokenType.ident).value
+    var hint: Node = nil
+    var value: Node = nil
+
+    if self.current.kind == TokenType.colon:
+        discard self.advance()
+        hint = self.parse_type()
+
+    if self.current.kind == TokenType.assign:
+        discard self.advance()
+        value = self.parse_expression()
+
+    discard self.terminate()
+    return node(token, self.peek(-1), NodeKind.varDeclaration,
+        varName = name,
+        varHint = hint,
+        varValue = value,
+        varMutable = token.kind == TokenType.var
+    )
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement node, or assignment.
     let token = self.current
@@ -637,7 +660,8 @@ proc parse_expression_statement(self: Parser): Node =
 proc parse_statement(self: Parser): Node =
     ## Parse a statement.
     case self.current.kind:
-        # tbd
+        of TokenType.var, TokenType.const:
+            return self.parse_var_decl()
         else:
             return self.parse_expression_statement()
 
