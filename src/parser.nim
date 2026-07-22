@@ -566,7 +566,18 @@ proc parse_ternary(self: Parser): Node =
 
 proc parse_pipeline(self: Parser): Node =
     ## Parse the pipeline operator (~>)
-    return self.parse_ternary()
+    let token = self.current
+    var left = self.prase_ternary()
+
+    while self.current.kind == TokenType.pipeline:
+        discard self.advance()
+        let right = self.parse_ternary()
+        left = node(token, self.peek(-1), NodeKind.binaryOp,
+            binaryOperator = TokenType.pipeline,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement node, or assignment.
