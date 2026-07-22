@@ -1,5 +1,5 @@
-- [ ] parse_expression
-- [ ] parse_pipeline (~>)
+- [x] parse_expression
+- [x] parse_pipeline (~>)
 - [x] parse_ternary (condition ? true : false)
 - [x] parse_or (||)
 - [x] parse_and (&&)
