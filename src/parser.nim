@@ -549,7 +549,20 @@ proc parse_or(self: Parser): Node =
 
 proc parse_ternary(self: Parser): Node =
     ## Parse the ternary if operator (condition ? true : false)
-    return self.parse_or()
+    let token = self.current
+    var condition = self.parse_or()
+
+    if self.current.kind == TokenType.question:
+        discard self.advance()
+        let trueBranch = self.parse_expression()
+        discard self.expect(TokenType.colon)
+        let falseBranch = self.parse_ternary()
+        condition = node(token, self.peek(-1), NodeKind.ternaryIf,
+            ternaryCondition = condition,
+            ternaryTrue = trueBranch,
+            ternaryFalse = falseBranch
+        )
+    return condition
 
 proc parse_pipeline(self: Parser): Node =
     ## Parse the pipeline operator (~>)
