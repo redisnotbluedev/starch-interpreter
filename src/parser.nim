@@ -501,7 +501,21 @@ proc parse_comparison(self: Parser): Node =
 
 proc parse_equality(self: Parser): Node =
     ## Parse equality operators (==, is).
-    return self.parse_comparison()
+    let token = self.current
+    var left = self.parse_comparison()
+
+    while self.current.kind in {
+        TokenType.eq, TokenType.neq, TokenType.approx,
+        TokenType.is, TokenType.isNot
+    }:
+        let operator = self.advance().kind
+        let right = self.parse_comparison()
+        left = node(token, self.peek(-1), Nodekind.binaryOp,
+            binaryOperator = operator,
+            binaryLeft = left,
+            binaryRight = right
+        )
+    return left
 
 proc parse_and(self: Parser): Node =
     ## Parse the and operator (&&).
