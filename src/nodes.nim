@@ -104,7 +104,7 @@ type
             whileBody*: seq[Node]
 
         of NodeKind.forLoop:
-            forVariables*: seq[Node]
+            forVariable*: Node
             forCollection*: Node
             forBody*: seq[Node]
 
@@ -338,7 +338,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.forLoop:
         result = header & "for\n"
-        result &= childNodes(node.forVariables, p)
+        result &= treeRepr(node.forVariable, p, false)
         result &= treeRepr(node.forCollection, p, false)
         result &= childNodes(node.forBody, p)
 

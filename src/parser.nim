@@ -677,6 +677,24 @@ proc parse_while(self: Parser): Node =
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.whileLoop, whileCondition = condition, whileBody = body)
 
+proc parse_for(self: Parser): Node =
+    ## Parse a for loop.
+    let token = self.expect(TokenType.for)
+    let ident = self.parse_primary()
+
+    if ident.kind notin {
+        NodeKind.identifier,  # for x in c {}
+        NodeKind.listLiteral, # for [x, y] in c {}
+        NodeKind.dictLiteral, # for {x: y} in c {}
+        NodeKind.setLiteral   # var {x, y} in c {}
+    }:
+        raise self.error(StarchSyntaxError, "cannot assign to expression in for loop")
+
+    discard self.expect(TokenType.in)
+    let collection = self.parse_expression()
+    let body = self.parse_block()
+    return node(token, self.peek(-1), NodeKind.forLoop, forVariable = ident, forCollection = collection, forBody = body)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -743,6 +761,8 @@ proc parse_statement(self: Parser): Node =
             return self.parse_if()
         of TokenType.while:
             return self.parse_while()
+        of TokenType.for:
+            return self.parse_for()
         else:
             return self.parse_expression_statement()
 
