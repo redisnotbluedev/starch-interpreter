@@ -652,6 +652,24 @@ proc parse_derive(self: Parser): Node =
         derivedDependencies = dependencies
     )
 
+proc parse_if(self: Parser): Node =
+    ## Parse an if-then block, including elif and else branches.
+    let token = self.expect(TokenType.if)
+    var branches: seq[tuple[condition: Node, body: seq[Node]]] = @[]
+
+    branches.add((condition: self.parse_expression(), body: self.parse_block()))
+
+    while self.current.kind == TokenType.elif:
+        discard self.advance()
+        branches.add((condition: self.parse_expression(), body: self.parse_block()))
+
+    var else_block: seq[Node] = @[]
+    if self.current.kind == TokenType.else:
+        discard self.advance()
+        else_block = self.parse_block()
+
+    return node(token, self.peek(-1), NodeKind.ifStatement, ifBranches = branches, ifElseBody = else_block)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -714,6 +732,8 @@ proc parse_statement(self: Parser): Node =
             return self.parse_var_decl()
         of TokenType.derive:
             return self.parse_derive()
+        of TokenType.if:
+            return self.parse_if()
         else:
             return self.parse_expression_statement()
 
