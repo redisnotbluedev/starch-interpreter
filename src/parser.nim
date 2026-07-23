@@ -1,4 +1,5 @@
 import std/algorithm
+import std/sets
 import std/strformat
 import std/strutils
 import errors
@@ -209,6 +210,25 @@ proc parse_args(self: Parser): seq[Node] =
         if self.current.kind == TokenType.comma:
             discard self.advance()
     return args
+
+proc findIdentifiers*(self: Parser, node: Node): HashSet[string] =
+    case node.kind:
+        of NodeKind.identifier:
+            result = toHashSet([node.name])
+        of NodeKind.binaryOp:
+            result = self.findIdentifiers(node.binaryLeft) + self.findIdentifiers(node.binaryRight)
+        of NodeKind.unaryOp:
+            result = self.findIdentifiers(node.unaryOperand)
+        of NodeKind.functionCall:
+            result = self.findIdentifiers(node.callCallee)
+            for arg in node.callArgs:
+                result = result + self.findIdentifiers(arg)
+        of NodeKind.memberAccess:
+            result = self.findIdentifiers(node.accessMember)
+        of NodeKind.literal:
+            result = initHashSet[string]()
+        else:
+            return initHashSet[string]()
 
 proc parse_primary(self: Parser): Node =
     ## Parse a primary expression (literals, identifiers, groups and lambdas).
@@ -610,6 +630,28 @@ proc parse_var_decl(self: Parser): Node =
         varMutable = token.kind == TokenType.var
     )
 
+proc parse_derive(self: Parser): Node =
+    ## Parse a derive statement.
+    let token = self.expect(TokenType.derive)
+    let name = self.expect(TokenType.ident).value.strVal
+    var hint: Node = nil
+
+    if self.current.kind == TokenType.colon:
+        discard self.advance()
+        hint = self.parse_type()
+
+    discard self.expect(TokenType.assign)
+    let value = self.parse_expression()
+    self.terminate()
+
+    let dependencies = self.find_identifiers(value)
+    return node(token, self.peek(-1), NodeKind.derivedVariable,
+        derivedName = name,
+        derivedHint = hint,
+        derivedValue = value,
+        derivedDependencies = dependencies
+    )
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -670,6 +712,8 @@ proc parse_statement(self: Parser): Node =
     case self.current.kind:
         of TokenType.var, TokenType.const:
             return self.parse_var_decl()
+        of TokenType.derive:
+            return self.parse_derive()
         else:
             return self.parse_expression_statement()
 

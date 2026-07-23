@@ -1,4 +1,7 @@
+import std/algorithm
 import std/macros
+import std/sequtils
+import std/sets
 import lexer
 import tokens
 
@@ -38,7 +41,7 @@ type
             derivedName*: string
             derivedHint*: Node
             derivedValue*: Node
-            derivedDependencies*: seq[Node]
+            derivedDependencies*: HashSet[string]
 
         of NodeKind.literal:
             case literalKind*: LiteralKind:
@@ -246,7 +249,8 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result = header & "derived: " & node.derivedName & "\n"
         if node.derivedHint  != nil: result &= treeRepr(node.derivedHint,  p, node.derivedValue == nil and node.derivedDependencies.len == 0)
         if node.derivedValue != nil: result &= treeRepr(node.derivedValue, p, node.derivedDependencies.len == 0)
-        result &= childNodes(node.derivedDependencies, p)
+        if node.derivedDependencies.len > 0:
+            result &= childSeqStr("dependencies", node.derivedDependencies.toSeq().sorted(), p, true)
 
     of NodeKind.literal:
         result = header & "literal: " & (case node.literalKind
