@@ -520,7 +520,7 @@ proc parse_equality(self: Parser): Node =
 proc parse_and(self: Parser): Node =
     ## Parse the and operator (&&).
     let token = self.current
-    var left = self.prase_equality()
+    var left = self.parse_equality()
 
     while self.current.kind == TokenType.and:
         discard self.advance()
@@ -535,7 +535,7 @@ proc parse_and(self: Parser): Node =
 proc parse_or(self: Parser): Node =
     ## Parse the or operator (||).
     let token = self.current
-    var left = self.prase_and()
+    var left = self.parse_and()
 
     while self.current.kind == TokenType.or:
         discard self.advance()
@@ -567,7 +567,7 @@ proc parse_ternary(self: Parser): Node =
 proc parse_pipeline(self: Parser): Node =
     ## Parse the pipeline operator (~>)
     let token = self.current
-    var left = self.prase_ternary()
+    var left = self.parse_ternary()
 
     while self.current.kind == TokenType.pipeline:
         discard self.advance()
@@ -582,9 +582,17 @@ proc parse_pipeline(self: Parser): Node =
 proc parse_var_decl(self: Parser): Node =
     ## Parse a variable declaration.
     let token = self.advance()
-    let name = self.expect(TokenType.ident).value
+    let name = self.parse_primary()
     var hint: Node = nil
     var value: Node = nil
+
+    if name.kind not in {
+        NodeKind.identifier,  # var x = 0;
+        NodeKind.listLiteral, # var [a, b] = [1, 2]
+        NodeKind.dictLiteral, # var {value: target} = {"name": "John"}
+        NodeKind.setLiteral   # var {a, b} = {"a": 1, "b": 2}
+    }:
+        raise self.error(StarchSyntaxError, "invalid target for variable declaration")
 
     if self.current.kind == TokenType.colon:
         discard self.advance()
@@ -594,7 +602,7 @@ proc parse_var_decl(self: Parser): Node =
         discard self.advance()
         value = self.parse_expression()
 
-    discard self.terminate()
+    self.terminate()
     return node(token, self.peek(-1), NodeKind.varDeclaration,
         varName = name,
         varHint = hint,
