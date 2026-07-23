@@ -586,7 +586,7 @@ proc parse_var_decl(self: Parser): Node =
     var hint: Node = nil
     var value: Node = nil
 
-    if name.kind not in {
+    if name.kind notin {
         NodeKind.identifier,  # var x = 0;
         NodeKind.listLiteral, # var [a, b] = [1, 2]
         NodeKind.dictLiteral, # var {value: target} = {"name": "John"}
