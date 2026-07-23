@@ -695,6 +695,13 @@ proc parse_for(self: Parser): Node =
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.forLoop, forVariable = ident, forCollection = collection, forBody = body)
 
+proc parse_watch(self: Parser): Node =
+    ## Parse a watch statement.
+    let token = self.expect(TokenType.watch)
+    let identifier = self.expect(TokenType.ident).value.strVal
+    let body = self.parse_block()
+    return node(token, self.peek(-1), NodeKind.watchStatement, watchTarget = identifier, watchBody = body)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -763,6 +770,8 @@ proc parse_statement(self: Parser): Node =
             return self.parse_while()
         of TokenType.for:
             return self.parse_for()
+        of TokenType.watch:
+            return self.parse_watch()
         else:
             return self.parse_expression_statement()
 

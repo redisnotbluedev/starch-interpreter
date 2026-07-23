@@ -109,7 +109,7 @@ type
             forBody*: seq[Node]
 
         of NodeKind.watchStatement:
-            watchDependencies*: seq[Node]
+            watchTarget*: string
             watchBody*: seq[Node]
 
         of NodeKind.assign:
@@ -343,8 +343,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result &= childNodes(node.forBody, p)
 
     of NodeKind.watchStatement:
-        result = header & "watch\n"
-        result &= childNodes(node.watchDependencies, p)
+        result = header & "watch: " & node.watchTarget & "\n"
         result &= childNodes(node.watchBody, p)
 
     of NodeKind.assign:
