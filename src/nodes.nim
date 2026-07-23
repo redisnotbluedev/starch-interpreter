@@ -237,7 +237,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         if node.paramDefault != nil: result &= treeRepr(node.paramDefault, p, true)
 
     of NodeKind.varDeclaration:
-        result = header & "var" & (if node.varMutable: " (mut)" else: "") & ": "
+        result = header & "var" & (if node.varMutable: " (mut)" else: "") & ":\n"
         result &= treeRepr(                         node.varName,  p, false)
         if node.varHint  != nil: result &= treeRepr(node.varHint,  p, node.varValue == nil)
         if node.varValue != nil: result &= treeRepr(node.varValue, p, true)
