@@ -670,6 +670,13 @@ proc parse_if(self: Parser): Node =
 
     return node(token, self.peek(-1), NodeKind.ifStatement, ifBranches = branches, ifElseBody = else_block)
 
+proc parse_while(self: Parser): Node =
+    ## Parse a while loop.
+    let token = self.expect(TokenType.while)
+    let condition = self.parse_expression()
+    let body = self.parse_block()
+    return node(token, self.peek(-1), NodeKind.whileLoop, whileCondition = condition, whileBody = body)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -734,6 +741,8 @@ proc parse_statement(self: Parser): Node =
             return self.parse_derive()
         of TokenType.if:
             return self.parse_if()
+        of TokenType.while:
+            return self.parse_while()
         else:
             return self.parse_expression_statement()
 
