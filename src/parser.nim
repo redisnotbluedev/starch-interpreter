@@ -611,7 +611,7 @@ proc parse_var_decl(self: Parser): Node =
     )
 
 proc parse_expression_statement(self: Parser): Node =
-    ## Parse an ExpressionStatement node, or assignment.
+    ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
     # LHS
     let expression = self.parse_expression()
@@ -621,8 +621,8 @@ proc parse_expression_statement(self: Parser): Node =
             NodeKind.identifier,   # bar = baz
             NodeKind.memberAccess, # foo.bar = baz
             NodeKind.listLiteral,  # [foo, bar] = baz
-            NodeKind.dictLiteral,  # {foo, bar} = baz
-            NodeKind.tupleLiteral  # (foo, bar) = baz
+            NodeKind.dictLiteral,  # {foo: bar} = baz
+            NodeKind.setLiteral    # {foo, bar} = baz
         }):
             raise self.error(StarchSyntaxError, "invalid assignment target")
 
