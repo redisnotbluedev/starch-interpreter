@@ -16,8 +16,7 @@ type
         matchStatement, tryStatement, classDeclaration,
         await, `yield`, indexAccess, ternaryIf, comment,
         comprehension, declarativeObject, typeOptional,
-        typeUnion, genericType, tupleLiteral, slice,
-        none, noneType
+        typeUnion, genericType, tupleLiteral, slice, null
 
     LiteralKind* {.pure.} = enum
         int, float, string, bool

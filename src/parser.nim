@@ -270,7 +270,7 @@ proc parse_primary(self: Parser): Node =
 
         of TokenType.null:
             discard self.advance()
-            return node(token, token, NodeKind.none)
+            return node(token, token, NodeKind.null)
 
         of TokenType.lParen:
             # () - grouping/lambda
