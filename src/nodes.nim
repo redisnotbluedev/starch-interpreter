@@ -353,8 +353,11 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.functionDeclaration:
         result = header & "func: " & node.funcName & "\n"
-        result &= childNodes(node.funcParams, p)
-        if node.funcReturnKind != nil: result &= treeRepr(node.funcReturnKind, p, node.funcBody.len == 0)
+        let hasReturn = node.funcReturnKind != nil
+        let hasBody   = node.funcBody.len > 0
+        for i, param in node.funcParams:
+            result &= treeRepr(param, p, i == node.funcParams.high and not hasReturn and not hasBody)
+        if hasReturn: result &= treeRepr(node.funcReturnKind, p, not hasBody)
         result &= childNodes(node.funcBody, p)
 
     of NodeKind.matchStatement:
