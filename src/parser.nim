@@ -267,6 +267,11 @@ proc parse_primary(self: Parser): Node =
             return node(token, self.peek(-1), NodeKind.identifier,
                 name = token.value.strVal
             )
+
+        of TokenType.null:
+            discard self.advance()
+            return node(token, token, NodeKind.none)
+
         of TokenType.lParen:
             # () - grouping/lambda
             if self.is_lambda():

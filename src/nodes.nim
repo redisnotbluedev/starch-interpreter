@@ -191,7 +191,7 @@ type
         of NodeKind.tupleLiteral:
             tupleItems*: seq[Node]
 
-        of NodeKind.break, NodeKind.continue, NodeKind.none, NodeKind.noneType:
+        of NodeKind.break, NodeKind.continue, NodeKind.null:
             discard
 
     Program* = ref object
@@ -476,8 +476,7 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.break:    result = header & "break\n"
     of NodeKind.continue: result = header & "continue\n"
-    of NodeKind.none:     result = header & "none\n"
-    of NodeKind.noneType: result = header & "noneType\n"
+    of NodeKind.null:     result = header & "null\n"
     of NodeKind.setLiteral:
         result = header & "set\n" & childNodes(node.setItems, p)
     of NodeKind.tupleLiteral:
