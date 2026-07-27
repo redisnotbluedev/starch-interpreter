@@ -193,13 +193,16 @@ proc parse_params(self: Parser): seq[Node] =
         if self.current.kind == TokenType.colon: # (x: int)
             discard self.advance()
             hint = self.parse_type()
-        if self.current.kind == TokenType.or: # (name or "john")
+        if self.current.kind == TokenType.default: # (name or "john")
             discard self.advance()
             default = self.parse_expression()
         params.add(node(name, self.peek(-1), NodeKind.parameter,
             paramName = name.value.strVal,
             paramHint = hint,
             paramDefault = default))
+
+        if self.current.kind != TokenType.rParen:
+            discard self.expect(TokenType.comma)
     return params
 
 proc parse_args(self: Parser): seq[Node] =
@@ -702,6 +705,22 @@ proc parse_watch(self: Parser): Node =
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.watchStatement, watchTarget = identifier, watchBody = body)
 
+proc parse_function(self: Parser): Node =
+    ## Parse a function declaration.
+    let token = self.expect(TokenType.function)
+    let name = self.expect(TokenType.ident).value.strVal
+    discard self.expect(TokenType.lParen)
+    let params = self.parse_params()
+    discard self.expect(TokenType.rParen)
+
+    var hint: Node = nil
+    if self.current.kind == TokenType.arrow:
+        discard self.advance()
+        hint = self.parse_type()
+
+    let body = self.parse_block()
+    return node(token, self.peek(-1), NodeKind.functionDeclaration, funcName = name, funcParams = params, funcReturnKind = hint, funcBody = body)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -772,6 +791,8 @@ proc parse_statement(self: Parser): Node =
             return self.parse_for()
         of TokenType.watch:
             return self.parse_watch()
+        of TokenType.function:
+            return self.parse_function()
         else:
             return self.parse_expression_statement()
 

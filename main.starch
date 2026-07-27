@@ -1,1 +1,3 @@
-watch x {}
+function exclaim(x: str or "Hello, World") -> null {
+	print(x);
+}

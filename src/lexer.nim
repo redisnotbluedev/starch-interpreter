@@ -368,6 +368,7 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "yield":    TokenType.yield
         of "not in":   TokenType.notIn
         of "is not":   TokenType.isNot
+        of "or":       TokenType.default
         else:          TokenType.ident
 
     if kind == TokenType.bool:

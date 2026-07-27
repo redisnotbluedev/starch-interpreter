@@ -9,8 +9,8 @@ type TokenType* {.pure.} = enum
     templateMiddle = "template string (middle)",
     templateEnd = "template string (end)",
     # Definitions
-    `var` = "'var'", `const` = "'const'", function = "'function'",
-    `derive` = "'derive'", `class` = "'class'", watch = "'watch'",
+    `const` = "'const'", function = "'function'", `derive` = "'derive'",
+    `class` = "'class'", watch = "'watch'", default = "'or'", `var` = "'var'",
     # Branching
     `if` = "'if'", `elif` = "'elif'", `else` = "'else'",
     `match` = "'match'", `case` = "'case'",
