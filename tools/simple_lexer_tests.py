@@ -3,44 +3,18 @@ Takes a section of the TokenType definition in Nim and extracts basic unit tests
 
 import re, pathlib
 
-code = """
-# Definitions
-`var` = "'var'", `const` = "'const'", function = "'function'",
-`derive` = "'derive'", `class` = "'class'",
-# Branching
-`if` = "'if'", `elif` = "'elif'", `else` = "'else'",
-`match` = "'match'", `case` = "'case'",
-# Looping
-`for` = "'for'", `while` = "'while'",
-`break` = "'break'", `continue` = "'continue'",
-# Errors
-`try` = "'try'", `catch` = "'catch'", `finally` = "'finally'",
-`throw` = "'throw'",
-# Imports
-`using` = "'using'", `from` = "'from'",
-# Operators
-plus = "'+'", minus = "'-'", star = "'*'", slash = "'/'",
-plusPlus = "'++'", minusMinus = "'--'", caret = "'^'",
-percent = "'%'", concat = "'~'", pipeline = "'~>'",
-range = "'..'", operator = "'operator'",
-# Comparison
-eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
-gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",
-# Logical
-`and` = "'and'", `or` = "'or'", `not` = "'not'",
-# Punctuation
-lParen = "'('", rParen = "')'", lBrace = "'{'",
-rBrace = "'}'", lBracket = "'['", rBracket = "']'",
-semicolon = "';'", colon = "':'", comma = "','", dot = "'.'",
-arrow = "'->'", fatArrow = "'=>'", assign = "'='",
-bang = "'!'", question = "'?'", pipe = "'|'",
-# Compound assignment
-plusAssign = "'+='", minusAssign = "'-='",
-starAssign = "'*='", slashAssign = "'/='",
-# Misc
-`return` = "'return'", watch = "'watch'",
-"""
-matches = re.findall(r"""#[^\n]*|\b(?:`?(\w+)`?\s*=\s*"([^"]+)"|`?(\w+)`?\b)""", code) # what a clean regex
+# Assumes simple_lexer_tests.py is in a tools/ directory (or similar) relative to the project root.
+BASE_DIR = pathlib.Path(__file__).parent.parent
+
+with open(BASE_DIR / "src" / "tokens.nim") as f:
+	code = re.search("# === BEGIN SIMPLE TOKENS === #.*?# === END SIMPLE TOKENS === #", f.read(), re.DOTALL).group() # ty: ignore[unresolved-attribute]
+
+# This regex extracts the key-value pairs from variable definitions regardless of whitespace:
+# (key) = "(value)"
+# Or just
+# (key)
+# Above, value is implicitly equal to key
+matches = re.findall(r"""#[^\n]*|(?:(?<=^)|(?<=\s))(?:`?(\w+)`?\s*=\s*"([^"]+)"|`?(\w+)`?\b)""", code) # what a clean regex
 tokens = []
 text = """{.used.}\n\nimport common\nimport unittest2\nimport ../../src/tokens\n\nsuite "Lexing: Keywords and symbols":"""
 
@@ -61,6 +35,5 @@ longest_value = len(max(tokens, key=lambda t: len(t[1]))[1])
 for key, value, pattern in tokens:
 	text += f"""\n    test "{value} token":\n        assertTokens("{pattern}", {" " * (longest_value - len(value))}[(TokenType.{key}, {" " * (longest_key - len(key))}noValue, 0, {len(pattern)})])"""
 
-# Assumes simple_lexer_tests.py is in a tools/ directory (or similar) relative to the project root.
-with open(pathlib.Path(__file__).parent.parent / "tests" / "lexer" / "static_tokens.nim", "w") as f:
+with open(BASE_DIR / "tests" / "lexer" / "static_tokens.nim", "w") as f:
 	f.write(text)

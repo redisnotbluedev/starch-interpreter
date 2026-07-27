@@ -8,6 +8,8 @@ type TokenType* {.pure.} = enum
     templateStart = "template string (start)",
     templateMiddle = "template string (middle)",
     templateEnd = "template string (end)",
+    # === BEGIN SIMPLE TOKENS === #
+    null = "'null'",
     # Definitions
     `const` = "'const'", function = "'function'", `derive` = "'derive'",
     `class` = "'class'", watch = "'watch'", default = "'or'", `var` = "'var'",
@@ -44,7 +46,9 @@ type TokenType* {.pure.} = enum
     plusAssign = "'+='", minusAssign = "'-='",
     starAssign = "'*='", slashAssign = "'/='",
     # Misc
-    `return` = "'return'", ident = "identifier",
+    `return` = "'return'",
+    # === END SIMPLE TOKENS === #
+    ident = "identifier",
     # Special
     comment = "comment", eof = "EOF"
 

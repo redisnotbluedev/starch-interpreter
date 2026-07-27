@@ -5,8 +5,8 @@ import unittest2
 import ../../src/tokens
 
 suite "Lexing: Keywords and symbols":
-    test "'var' token":
-        assertTokens("var",      [(TokenType.var,         noValue, 0, 3)])
+    test "'null' token":
+        assertTokens("null",     [(TokenType.null,        noValue, 0, 4)])
     test "'const' token":
         assertTokens("const",    [(TokenType.const,       noValue, 0, 5)])
     test "'function' token":
@@ -15,6 +15,12 @@ suite "Lexing: Keywords and symbols":
         assertTokens("derive",   [(TokenType.derive,      noValue, 0, 6)])
     test "'class' token":
         assertTokens("class",    [(TokenType.class,       noValue, 0, 5)])
+    test "'watch' token":
+        assertTokens("watch",    [(TokenType.watch,       noValue, 0, 5)])
+    test "'or' token":
+        assertTokens("or",       [(TokenType.default,     noValue, 0, 2)])
+    test "'var' token":
+        assertTokens("var",      [(TokenType.var,         noValue, 0, 3)])
     test "'if' token":
         assertTokens("if",       [(TokenType.if,          noValue, 0, 2)])
     test "'elif' token":
@@ -33,6 +39,10 @@ suite "Lexing: Keywords and symbols":
         assertTokens("break",    [(TokenType.break,       noValue, 0, 5)])
     test "'continue' token":
         assertTokens("continue", [(TokenType.continue,    noValue, 0, 8)])
+    test "'await' token":
+        assertTokens("await",    [(TokenType.await,       noValue, 0, 5)])
+    test "'yield' token":
+        assertTokens("yield",    [(TokenType.yield,       noValue, 0, 5)])
     test "'try' token":
         assertTokens("try",      [(TokenType.try,         noValue, 0, 3)])
     test "'catch' token":
@@ -87,12 +97,14 @@ suite "Lexing: Keywords and symbols":
         assertTokens("is",       [(TokenType.is,          noValue, 0, 2)])
     test "'in' token":
         assertTokens("in",       [(TokenType.in,          noValue, 0, 2)])
-    test "'and' token":
-        assertTokens("and",      [(TokenType.and,         noValue, 0, 3)])
-    test "'or' token":
-        assertTokens("or",       [(TokenType.or,          noValue, 0, 2)])
-    test "'not' token":
-        assertTokens("not",      [(TokenType.not,         noValue, 0, 3)])
+    test "'not in' token":
+        assertTokens("not in",   [(TokenType.notIn,       noValue, 0, 6)])
+    test "'is not' token":
+        assertTokens("is not",   [(TokenType.isNot,       noValue, 0, 6)])
+    test "'&&' token":
+        assertTokens("&&",       [(TokenType.and,         noValue, 0, 2)])
+    test "'||' token":
+        assertTokens("||",       [(TokenType.or,          noValue, 0, 2)])
     test "'(' token":
         assertTokens("(",        [(TokenType.lParen,      noValue, 0, 1)])
     test "')' token":
@@ -135,5 +147,3 @@ suite "Lexing: Keywords and symbols":
         assertTokens("/=",       [(TokenType.slashAssign, noValue, 0, 2)])
     test "'return' token":
         assertTokens("return",   [(TokenType.return,      noValue, 0, 6)])
-    test "'watch' token":
-        assertTokens("watch",    [(TokenType.watch,       noValue, 0, 5)])
