@@ -798,6 +798,23 @@ proc parse_statement(self: Parser): Node =
             return self.parse_watch()
         of TokenType.function:
             return self.parse_function()
+        of TokenType.break:
+            let token = self.advance()
+            let statement = node(token, token, NodeKind.break)
+            self.terminate()
+            return statement
+        of TokenType.continue:
+            let token = self.advance()
+            let statement = node(token, token, NodeKind.continue)
+            self.terminate()
+            return statement
+        of TokenType.return:
+            let token = self.advance()
+            var expression: Node = nil
+            if self.current.kind != TokenType.semicolon:
+                expression = self.parse_expression()
+            self.terminate()
+            return node(token, self.peek(-1), NodeKind.return, returnValue = expression)
         else:
             return self.parse_expression_statement()
 
