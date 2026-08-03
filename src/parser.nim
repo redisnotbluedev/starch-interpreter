@@ -726,6 +726,33 @@ proc parse_function(self: Parser): Node =
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.functionDeclaration, funcName = name, funcParams = params, funcReturnKind = hint, funcBody = body)
 
+proc parse_match(self: Parser): Node =
+    ## Parse a match case statement.
+    let token = self.advance()
+    let expression = self.parse_expression()
+    discard self.expect(TokenType.lBrace)
+
+    var cases: seq[tuple[patterns: seq[Node], guard: Node, body: seq[Node]]] = @[]
+    while self.current.kind == TokenType.case:
+        let start = self.advance()
+        var patterns = @[self.parse_expression()]
+        while self.current.kind == TokenType.pipe:
+            # double while loop is CRAZYYY
+            discard self.advance()
+            patterns.add(self.parse_expression())
+
+        var guard: Node = nil
+        if self.current.kind == TokenType.if:
+            # guard condition
+            discard self.advance()
+            guard = self.parse_expression()
+
+        let body = self.parse_block()
+        cases.add((patterns: patterns, guard: guard, body: body))
+
+    discard self.expect(TokenType.rBrace)
+    return node(token, self.peek(-1), NodeKind.matchStatement, matchExpression = expression, matchCases = cases)
+
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
     let token = self.current
@@ -835,6 +862,8 @@ proc parse_statement(self: Parser): Node =
 
             self.terminate()
             return node(token, self.peek(-1), NodeKind.using, usingModules = names)
+        of TokenType.match:
+            return self.parse_match()
         else:
             return self.parse_expression_statement()
 

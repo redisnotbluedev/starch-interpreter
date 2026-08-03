@@ -368,9 +368,12 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
             let cconn = if last: "└── " else: "├── "
             let cp2   = if last: "    " else: "│   "
             result &= p & cconn & "case\n"
-            result &= childNodes(c.patterns, p & cp2)
-            if c.guard != nil: result &= treeRepr(c.guard, p & cp2, c.body.len == 0)
-            result &= childNodes(c.body,     p & cp2)
+            let hasGuard = c.guard != nil
+            let hasBody  = c.body.len > 0
+            for j, pattern in c.patterns:
+                result &= treeRepr(pattern, p & cp2, j == c.patterns.high and not hasGuard and not hasBody)
+            if hasGuard: result &= treeRepr(c.guard, p & cp2, not hasBody)
+            result &= childNodes(c.body, p & cp2)
 
     of NodeKind.tryStatement:
         result = header & "try\n"
