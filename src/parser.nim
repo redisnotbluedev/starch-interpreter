@@ -820,8 +820,23 @@ proc parse_statement(self: Parser): Node =
             let expression = self.parse_expression()
             self.terminate()
             return node(token, token, NodeKind.throw, throwException = expression)
+        of TokenType.using:
+            let token = self.advance()
+            var names = @[self.expect(TokenType.ident).value.strVal]
+            while self.current.kind == TokenType.comma:
+                discard self.advance()
+                names.add(self.expect(TokenType.ident).value.strVal)
+
+            if self.current.kind == TokenType.from:
+                discard self.advance()
+                let module = self.expect(TokenType.ident).value.strVal
+                self.terminate()
+                return node(token, self.peek(-1), NodeKind.importFrom, importModule = module, importNames = names)
+
+            self.terminate()
+            return node(token, self.peek(-1), NodeKind.using, usingModules = names)
         else:
-            return self.parse_expression_statement()
+            return self.parse_expression_stdatement()
 
 proc parse*(self: Parser): Program =
     ## Parse the program.
