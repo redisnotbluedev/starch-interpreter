@@ -815,6 +815,11 @@ proc parse_statement(self: Parser): Node =
                 expression = self.parse_expression()
             self.terminate()
             return node(token, self.peek(-1), NodeKind.return, returnValue = expression)
+        of TokenType.throw:
+            let token = self.advance()
+            let expression = self.parse_expression()
+            self.terminate()
+            return node(token, token, NodeKind.throw, throwException = expression)
         else:
             return self.parse_expression_statement()
 
