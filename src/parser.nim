@@ -836,7 +836,7 @@ proc parse_statement(self: Parser): Node =
             self.terminate()
             return node(token, self.peek(-1), NodeKind.using, usingModules = names)
         else:
-            return self.parse_expression_stdatement()
+            return self.parse_expression_statement()
 
 proc parse*(self: Parser): Program =
     ## Parse the program.
