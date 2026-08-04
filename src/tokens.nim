@@ -12,7 +12,8 @@ type TokenType* {.pure.} = enum
     null = "'null'",
     # Definitions
     `const` = "'const'", function = "'function'", `derive` = "'derive'",
-    `class` = "'class'", watch = "'watch'", default = "'or'", `var` = "'var'",
+    `class` = "'class'", watch = "'watch'", default = "'or'",
+    override = "'override'", `var` = "'var'",
     # Branching
     `if` = "'if'", `elif` = "'elif'", `else` = "'else'",
     `match` = "'match'", `case` = "'case'",
@@ -29,7 +30,7 @@ type TokenType* {.pure.} = enum
     plus = "'+'", minus = "'-'", star = "'*'", slash = "'/'",
     plusPlus = "'++'", minusMinus = "'--'", caret = "'^'",
     percent = "'%'", concat = "'~'", pipeline = "'~>'",
-    range = "'..'", operator = "'operator'",
+    range = "'..'", `as` = "'as'",
     # Comparison
     eq = "'=='", neq = "'!='", lt = "'<'", gt = "'>'", lte = "'<='",
     gte = "'>='", approx = "'≈'", `is` = "'is'", `in` = "'in'",

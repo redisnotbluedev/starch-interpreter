@@ -1,5 +1,8 @@
-match x {
-	case "hello" {}
-	case "what" | "oh" {}
-	case _ if x > 5 {}
+try {
+	do_sketchy_thing();
+}
+catch {}
+catch SyntaxError {}
+catch Exception as e {
+	print(e);
 }

@@ -363,13 +363,14 @@ proc readIdentOrKeyword(self: Lexer): Token =
         of "throw":    TokenType.throw
         of "match":    TokenType.match
         of "case":     TokenType.case
-        of "operator": TokenType.operator
+        of "override": TokenType.override
         of "await":    TokenType.await
         of "yield":    TokenType.yield
         of "not in":   TokenType.notIn
         of "is not":   TokenType.isNot
         of "or":       TokenType.default
         of "null":     TokenType.null
+        of "as":       TokenType.as
         else:          TokenType.ident
 
     if kind == TokenType.bool:

@@ -726,9 +726,43 @@ proc parse_function(self: Parser): Node =
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.functionDeclaration, funcName = name, funcParams = params, funcReturnKind = hint, funcBody = body)
 
+proc parse_using(self: Parser): Node =
+    ## Parse a using (import) statement.
+    ## using foo;               - import module foo
+    ## using foo as bar;        - import module foo aliased as bar
+    ## using foo, bar;          - import modules foo and bar
+    ## using foo from bar;      - import name foo from module bar
+    ## using foo, baz from bar; - import names foo and baz from module bar
+    ## yeah it's weird so what??
+    let token = self.advance()
+    var names = @[self.expect(TokenType.ident).value.strVal]
+    var alias = ""
+    if self.current.kind == TokenType.as:
+        discard self.advance()
+        alias = self.expect(TokenType.ident).value.strVal
+
+    while self.current.kind == TokenType.comma:
+        discard self.advance()
+        names.add(self.expect(TokenType.ident).value.strVal)
+
+    if self.current.kind == TokenType.from:
+        if alias != "":
+            raise self.error(StarchSyntaxError, "cannot use 'as' alias with 'from' import")
+        discard self.advance()
+        let module = self.expect(TokenType.ident).value.strVal
+        self.terminate()
+        return node(token, self.peek(-1), NodeKind.importFrom, importModule = module, importNames = names)
+
+    self.terminate()
+    var modules: seq[tuple[module: string, alias: string]] = @[]
+    for i, name in names:
+        # Only the first name can have an alias (using foo as bar)
+        modules.add((module: name, alias: if i == 0: alias else: ""))
+    return node(token, self.peek(-1), NodeKind.using, usingModules = modules)
+
 proc parse_match(self: Parser): Node =
     ## Parse a match case statement.
-    let token = self.advance()
+    let token = self.expect(TokenType.match)
     let expression = self.parse_expression()
     discard self.expect(TokenType.lBrace)
 
@@ -752,6 +786,41 @@ proc parse_match(self: Parser): Node =
 
     discard self.expect(TokenType.rBrace)
     return node(token, self.peek(-1), NodeKind.matchStatement, matchExpression = expression, matchCases = cases)
+
+proc parse_try(self: Parser): Node =
+    ## Parse a try-catch block.
+    let token = self.expect(TokenType.try)
+    let body = self.parse_block()
+    var catches: seq[tuple[kind: Node, variable: string, body: seq[Node]]] = @[]
+    var finalBody: seq[Node] = @[]
+
+    while self.current.kind == TokenType.catch:
+        discard self.advance()
+        case self.current.kind:
+            of TokenType.lBrace:
+                # catch {}
+                let body = self.parse_block()
+                catches.add((kind: nil, variable: "", body: body))
+            of TokenType.ident:
+                # catch Exception {}
+                # catch Exception as e {}
+                let token = self.advance()
+                let kind = node(token, token, NodeKind.identifier, name = token.value.strVal)
+                var variable = ""
+                if self.current.kind == TokenType.as:
+                    discard self.advance()
+                    variable = self.advance().value.strVal
+
+                let body = self.parse_block()
+                catches.add((kind: kind, variable: variable, body: body))
+            else:
+                raise self.error(StarchSyntaxError, "expected block for catch statement")
+
+    if self.current.kind == TokenType.finally:
+        discard self.advance()
+        finalBody = self.parse_block()
+
+    return node(token, self.peek(-1), NodeKind.tryStatement, tryBody = body, tryCatches = catches, tryFinallyBody = finalBody)
 
 proc parse_expression_statement(self: Parser): Node =
     ## Parse an ExpressionStatement or Assignment node.
@@ -848,22 +917,11 @@ proc parse_statement(self: Parser): Node =
             self.terminate()
             return node(token, token, NodeKind.throw, throwException = expression)
         of TokenType.using:
-            let token = self.advance()
-            var names = @[self.expect(TokenType.ident).value.strVal]
-            while self.current.kind == TokenType.comma:
-                discard self.advance()
-                names.add(self.expect(TokenType.ident).value.strVal)
-
-            if self.current.kind == TokenType.from:
-                discard self.advance()
-                let module = self.expect(TokenType.ident).value.strVal
-                self.terminate()
-                return node(token, self.peek(-1), NodeKind.importFrom, importModule = module, importNames = names)
-
-            self.terminate()
-            return node(token, self.peek(-1), NodeKind.using, usingModules = names)
+            return self.parse_using()
         of TokenType.match:
             return self.parse_match()
+        of TokenType.try:
+            return self.parse_try()
         else:
             return self.parse_expression_statement()
 

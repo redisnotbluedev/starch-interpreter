@@ -89,7 +89,7 @@ type
             throwException*: Node
 
         of NodeKind.using:
-            usingModules*: seq[string]
+            usingModules*: seq[tuple[module: string, alias: string]]
 
         of NodeKind.importFrom:
             importModule*: string
@@ -129,7 +129,7 @@ type
 
         of NodeKind.tryStatement:
             tryBody*: seq[Node]
-            tryCatches*: seq[tuple[kind: Node, variable: Node, body: seq[Node]]]
+            tryCatches*: seq[tuple[kind: Node, variable: string, body: seq[Node]]]
             tryFinallyBody*: seq[Node]
 
         of NodeKind.classDeclaration:
@@ -312,7 +312,11 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
 
     of NodeKind.using:
         result = header & "using\n"
-        result &= childSeqStr("modules", node.usingModules, p, true)
+        let moduleStrs = node.usingModules.mapIt(
+            if it.alias != "": it.module & " as " & it.alias
+            else: it.module
+        )
+        result &= childSeqStr("modules", moduleStrs, p, true)
 
     of NodeKind.importFrom:
         result = header & "import from: " & node.importModule & "\n"
@@ -382,9 +386,8 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
             let last  = i == node.tryCatches.high and node.tryFinallyBody.len == 0
             let cconn = if last: "└── " else: "├── "
             let cp2   = if last: "    " else: "│   "
-            result &= p & cconn & "catch\n"
-            if c.kind     != nil: result &= treeRepr(c.kind,     p & cp2, false)
-            if c.variable != nil: result &= treeRepr(c.variable, p & cp2, false)
+            result &= p & cconn & "catch" & (if c.variable != "": ": " & c.variable else: "") & "\n"
+            if c.kind != nil: result &= treeRepr(c.kind, p & cp2, c.body.len == 0)
             result &= childNodes(c.body, p & cp2)
         if node.tryFinallyBody.len > 0:
             result &= p & "└── finally\n"

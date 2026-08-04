@@ -19,6 +19,8 @@ suite "Lexing: Keywords and symbols":
         assertTokens("watch",    [(TokenType.watch,       noValue, 0, 5)])
     test "'or' token":
         assertTokens("or",       [(TokenType.default,     noValue, 0, 2)])
+    test "'override' token":
+        assertTokens("override", [(TokenType.override,    noValue, 0, 8)])
     test "'var' token":
         assertTokens("var",      [(TokenType.var,         noValue, 0, 3)])
     test "'if' token":
@@ -77,8 +79,8 @@ suite "Lexing: Keywords and symbols":
         assertTokens("~>",       [(TokenType.pipeline,    noValue, 0, 2)])
     test "'..' token":
         assertTokens("..",       [(TokenType.range,       noValue, 0, 2)])
-    test "'operator' token":
-        assertTokens("operator", [(TokenType.operator,    noValue, 0, 8)])
+    test "'as' token":
+        assertTokens("as",       [(TokenType.as,          noValue, 0, 2)])
     test "'==' token":
         assertTokens("==",       [(TokenType.eq,          noValue, 0, 2)])
     test "'!=' token":
