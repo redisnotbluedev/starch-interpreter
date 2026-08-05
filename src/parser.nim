@@ -894,6 +894,9 @@ proc parse_statement(self: Parser): Node =
             return self.parse_watch()
         of TokenType.function:
             return self.parse_function()
+        of TokenType.class:
+            # Well this ought to be fun...
+            return self.parse_class()
         of TokenType.break:
             let token = self.advance()
             let statement = node(token, token, NodeKind.break)
