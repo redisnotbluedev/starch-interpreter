@@ -133,8 +133,8 @@ type
             tryFinallyBody*: seq[Node]
 
         of NodeKind.classDeclaration:
-            className*: Node
-            classParent*: Node
+            className*: string
+            classParent*: string
             classFields*: seq[Node]
             classMethods*: seq[Node]
             classWatchers*: seq[Node]

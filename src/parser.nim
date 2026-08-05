@@ -36,6 +36,19 @@ proc error(self: Parser, kind: typedesc[StarchError], message: string): StarchEr
         file = self.filename
     )
 
+proc error(self: Parser, kind: typedesc[StarchError], message: string, node: Node): StarchError =
+    ## Generates an error pointing at an already-parsed node rather than the current token.
+    let (line, col, ctx) = self.lookupPos(node.pos)
+    return newStarchError(
+        kind = kind,
+        msg = message,
+        context = ctx,
+        line = line,
+        col = col,
+        length = node.length,
+        file = self.filename
+    )
+
 proc newParser*(tokens: seq[Token], filename: string, source: string, lineIndex: LineIndex): Parser =
     ## Creates a parser with default values.
     ## Comment tokens are stripped from the token stream up front and stored in
@@ -725,6 +738,39 @@ proc parse_function(self: Parser): Node =
 
     let body = self.parse_block()
     return node(token, self.peek(-1), NodeKind.functionDeclaration, funcName = name, funcParams = params, funcReturnKind = hint, funcBody = body)
+
+proc parse_class(self: Parser): Node =
+    ## Parse a class declaration.
+    let token = self.expect(TokenType.class)
+    let name = self.expect(TokenType.ident).value.strVal
+    var parent: string = ""
+
+    if self.current.kind == TokenType.is:
+        discard self.advance()
+        parent = self.expect(TokenType.ident).value.strVal
+
+    var fields, methods, overrides, watchers, derivatives: seq[Node] = @[]
+    for statement in self.parse_block():
+        case statement.kind:
+            of NodeKind.varDeclaration:
+                fields.add(statement)
+            of NodeKind.functionDeclaration:
+                methods.add(statement)
+            of NodeKind.watchStatement:
+                watchers.add(statement)
+            of NodeKind.derivedVariable:
+                derivatives.add(statement)
+            else:
+                raise self.error(StarchSyntaxError, "unexpected statement in class body", statement)
+
+    return node(token, self.peek(-1), NodeKind.classDeclaration,
+        className = name,
+        classParent = parent,
+        classFields = fields,
+        classMethods = methods,
+        classWatchers = watchers,
+        classDerivatives = derivatives
+    )
 
 proc parse_using(self: Parser): Node =
     ## Parse a using (import) statement.
