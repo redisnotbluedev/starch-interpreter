@@ -161,9 +161,6 @@ type
             ternaryTrue*: Node
             ternaryFalse*: Node
 
-        of NodeKind.comment:
-            comment*: string
-
         of NodeKind.comprehension:
             comprehensionExpr*: Node
             comprehensionVars*: seq[Node]
@@ -443,9 +440,6 @@ proc treeRepr(node: Node, prefix: string, isLast: bool): string =
         result &= treeRepr(node.ternaryCondition, p, false)
         result &= treeRepr(node.ternaryTrue,      p, false)
         result &= treeRepr(node.ternaryFalse,     p, true)
-
-    of NodeKind.comment:
-        result = header & "# " & node.comment & "\n"
 
     of NodeKind.comprehension:
         result = header & "comprehension\n"
