@@ -14,9 +14,9 @@ type
         throw, `using`, importFrom, ifStatement, whileLoop,
         forLoop, watchStatement, assign, functionDeclaration,
         matchStatement, tryStatement, classDeclaration,
-        await, `yield`, indexAccess, ternaryIf, comment,
+        await, `yield`, indexAccess, ternaryIf, null,
         comprehension, declarativeObject, typeOptional,
-        typeUnion, genericType, tupleLiteral, slice, null
+        typeUnion, genericType, tupleLiteral, slice
 
     LiteralKind* {.pure.} = enum
         int, float, string, bool
